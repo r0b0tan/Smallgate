@@ -2,9 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Enums\UserRole;
+use App\Models\Customer;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
@@ -12,13 +13,11 @@ use Illuminate\Support\Str;
  */
 class UserFactory extends Factory
 {
-    /**
-     * The current password being used by the factory.
-     */
-    protected static ?string $password;
+    protected $model = User::class;
 
     /**
-     * Define the model's default state.
+     * The default is a customer user belonging to a fresh customer, because
+     * that is what the database CHECK constraint requires of role "customer".
      *
      * @return array<string, mixed>
      */
@@ -26,20 +25,42 @@ class UserFactory extends Factory
     {
         return [
             'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
+            'email' => Str::lower(fake()->unique()->safeEmail()),
+            'password' => 'password-for-tests-only',
+            'role' => UserRole::Customer,
+            'customer_id' => Customer::factory(),
+            'is_active' => true,
             'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
     }
 
     /**
-     * Indicate that the model's email address should be unverified.
+     * Administrators never belong to a customer.
      */
+    public function admin(): static
+    {
+        return $this->state(fn () => [
+            'role' => UserRole::Admin,
+            'customer_id' => null,
+        ]);
+    }
+
+    public function for_customer(Customer $customer): static
+    {
+        return $this->state(fn () => [
+            'role' => UserRole::Customer,
+            'customer_id' => $customer->id,
+        ]);
+    }
+
+    public function blocked(): static
+    {
+        return $this->state(fn () => ['is_active' => false]);
+    }
+
     public function unverified(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
-        ]);
+        return $this->state(fn () => ['email_verified_at' => null]);
     }
 }

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Smallgate developer helper -- thin wrapper around docker compose so every
+# command runs inside the container with the host user's uid/gid.
+#
+#   ./sg up                 start the stack
+#   ./sg down               stop the stack
+#   ./sg artisan migrate    run an artisan command
+#   ./sg composer install   run a composer command
+#   ./sg test               run the full test suite
+#   ./sg pint               format the code
+#   ./sg npm run build      run an npm command
+#   ./sg shell              open a shell in the app container
+set -euo pipefail
+
+cd "$(dirname "$0")"
+
+RUN=(docker compose run --rm --user "$(id -u):$(id -g)" app)
+
+case "${1:-help}" in
+    up)       shift; exec docker compose up -d "$@" ;;
+    down)     shift; exec docker compose down "$@" ;;
+    logs)     shift; exec docker compose logs -f "$@" ;;
+    artisan)  shift; exec "${RUN[@]}" php artisan "$@" ;;
+    composer) shift; exec "${RUN[@]}" composer "$@" ;;
+    test)     shift; exec "${RUN[@]}" php artisan test "$@" ;;
+    pint)     shift; exec "${RUN[@]}" ./vendor/bin/pint "$@" ;;
+    php)      shift; exec "${RUN[@]}" php "$@" ;;
+    shell)    shift; exec "${RUN[@]}" bash ;;
+    npm)      shift; exec docker compose run --rm --user "$(id -u):$(id -g)" vite npm "$@" ;;
+    help|*)   sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//' ;;
+esac
