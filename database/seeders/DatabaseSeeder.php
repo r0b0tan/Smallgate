@@ -33,7 +33,7 @@ class DatabaseSeeder extends Seeder
         $password = env('SEED_PASSWORD', 'passwort-nur-fuer-lokale-entwicklung');
 
         $admin = new User;
-        $admin->name = 'Christian Bauer';
+        $admin->name = env('SEED_ADMIN_NAME', 'Admin');
         $admin->email = env('SEED_ADMIN_EMAIL', 'admin@clickit-digital.test');
         $admin->password = $password;
         $admin->role = UserRole::Admin;
