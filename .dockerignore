@@ -1,0 +1,59 @@
+# Nur der Build-Kontext, nicht der Bind-Mount aus compose.yaml.
+# Das Dockerfile kopiert ausschliesslich docker/php/php.ini -- alles andere
+# muss den Docker-Daemon gar nicht erst erreichen.
+
+# Secrets und lokale Konfiguration
+.env
+.env.*
+!.env.example
+auth.json
+*.pem
+*.key
+storage/*.key
+
+# Versionskontrolle und Editor-/Tooling-Kram
+.git
+.gitattributes
+.gitignore
+.github
+.idea
+.vscode
+.zed
+.nova
+.cursor
+.codex
+.phpactor.json
+_ide_helper.php
+.DS_Store
+Thumbs.db
+
+# Abhaengigkeiten und Build-Artefakte
+vendor
+node_modules
+public/build
+public/hot
+public/storage
+public/fonts-manifest.dev.json
+
+# Laufzeitdaten, Logs und Caches
+storage/logs
+storage/framework/cache
+storage/framework/sessions
+storage/framework/testing
+storage/framework/views
+storage/app/previews
+storage/pail
+bootstrap/cache
+.phpunit.cache
+.phpunit.result.cache
+*.log
+
+# Datenbank-Dumps und Backups
+*.sql
+*.sql.gz
+*.dump
+*.bak
+
+# Tests und Dokumentation werden im Image nicht gebraucht
+tests
+docs

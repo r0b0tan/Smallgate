@@ -99,9 +99,12 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Throttle per email *and* IP: a single attacker cannot lock every account
-     * out by guessing, and guessing one account from many IPs is still limited
-     * by the shared email component.
+     * Throttle per email+IP combination: guessing against one account never
+     * locks another one out, and a single IP is limited per account.
+     *
+     * This is one counter per pair, not separate per-email and per-IP limits.
+     * An attacker with many source addresses therefore gets a fresh budget per
+     * address; distributed guessing is not covered here.
      */
     public function throttleKey(): string
     {

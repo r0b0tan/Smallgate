@@ -112,10 +112,14 @@ Die getroffenen Entscheidungen im Überblick:
 über Laravels `Hash`-Fassade. Keine eigene Kryptografie, keine Verschlüsselung
 von Passwörtern.
 
-**Anmeldung** – Rate-Limiting pro E-Mail *und* IP; Session-ID wird nach dem Login
-neu erzeugt; eine einzige generische Fehlermeldung für falsches Passwort,
-unbekannte Adresse, gesperrtes Konto und deaktivierten Kunden. Auch „Passwort
-vergessen“ antwortet immer gleich, unabhängig davon, ob die Adresse existiert.
+**Anmeldung** – Rate-Limiting pro Kombination aus E-Mail und IP (fünf Versuche je
+Minute). Das ist *ein* Zähler pro Paar, nicht je ein eigenes Limit pro E-Mail und
+pro IP: Angriffe auf ein Konto sperren kein anderes, verteiltes Raten über viele
+Quelladressen wird damit aber nicht verhindert. Die Session-ID wird nach dem
+Login neu erzeugt; es gibt eine einzige generische Fehlermeldung für falsches
+Passwort, unbekannte Adresse, gesperrtes Konto und deaktivierten Kunden. Auch
+„Passwort vergessen“ antwortet immer gleich, unabhängig davon, ob die Adresse
+existiert.
 
 **Sitzungen** – Datenbank-Treiber, `HttpOnly`, `SameSite=lax`, `Secure` in
 Produktion. Nach Passwortänderung und -Reset werden alle anderen Sitzungen
@@ -148,10 +152,20 @@ ausgeschlossen. Es werden keine Tokens, Secrets oder personenbezogenen Daten
 protokolliert.
 
 **Vorschau-Ziele** – Pfade und Upstream-URLs stammen ausschließlich aus einer
-Allowlist in `config/previews.php`. Path Traversal wird lexikalisch aufgelöst und
-zusätzlich per `realpath()` gegen Symlinks abgesichert; SSRF wird über eine
-Host-Allowlist plus Abweisung von IP-Literalen, Zugangsdaten und abweichenden
-Ports verhindert. Kunden sehen ein Ziel nie und können es nie beeinflussen.
+Allowlist in `config/previews.php`. Path Traversal wird lexikalisch aufgelöst;
+existierende Pfade werden zusätzlich per `realpath()` gegen Symlinks geprüft.
+Upstream-URLs müssen HTTPS sein und einen erlaubten Host ohne IP-Literal,
+Zugangsdaten oder abweichenden Port verwenden. Kunden sehen ein Ziel nie und
+können es nie beeinflussen.
+
+Diese Prüfungen sind eine Eingabevalidierung, keine vollständige SSRF-Abwehr:
+Hostnamen werden nicht aufgelöst, private oder Loopback-Adressen hinter einem
+erlaubten Namen nicht erkannt, Redirects und DNS-Rebinding nicht behandelt.
+Ebenso schützt `realpath()` nicht gegen Symlinks, die erst nach der Prüfung
+entstehen (TOCTOU), und nicht gegen noch nicht existierende Ziele. Solange nur
+der `NullPreviewProvisioner` existiert, wird keine Verbindung aufgebaut und
+keine Datei ausgeliefert – vor einer echten Auslieferung müssen beide Prüfungen
+am tatsächlichen I/O-Punkt wiederholt und vervollständigt werden.
 
 ## Vorschauen
 

@@ -61,9 +61,13 @@ return [
     ))),
 
     /*
-    | Hosts an "upstream_url" target may point at. This is the SSRF allowlist:
-    | anything not listed here is rejected, including IP literals and any host
-    | that resolves to a loopback, link-local or private range.
+    | Hosts an "upstream_url" target may point at. Anything not listed here is
+    | rejected, as are IP literals, embedded credentials and non-HTTPS schemes.
+    | Note that hostnames are NOT resolved here: a listed host that points at a
+    | loopback, link-local, private or metadata address is still accepted. Any
+    | component that actually opens a connection must resolve the host itself,
+    | reject non-public addresses, pin the validated address and re-check every
+    | redirect.
     */
     'allowed_upstream_hosts' => array_values(array_filter(array_map(
         'trim',

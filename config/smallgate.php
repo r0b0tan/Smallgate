@@ -26,8 +26,10 @@ return [
     | Login Throttling
     |--------------------------------------------------------------------------
     |
-    | Failed logins are rate limited per email+IP combination. Successful
-    | logins clear the counter.
+    | Failed logins are rate limited per email+IP combination -- one counter
+    | per pair, not separate per-email and per-IP limits. Successful logins
+    | clear the counter. Distributed guessing from many source addresses is
+    | not covered by this.
     |
     */
 
