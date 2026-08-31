@@ -29,8 +29,8 @@ Voraussetzung ist Docker mit Compose. PHP, Composer und Node werden **nicht**
 auf dem Host benötigt – alles läuft im Container.
 
 ```bash
-git clone https://github.com/r0b0tan/Smallgate.git smallgate
-cd smallgate
+git clone https://github.com/r0b0tan/Smallgate.git
+cd Smallgate
 
 cp .env.example .env
 
