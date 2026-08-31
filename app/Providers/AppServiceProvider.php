@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Contracts\PreviewProvisioner;
 use App\Services\Previews\NullPreviewProvisioner;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Middleware\TrustProxies;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -29,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureModels();
         $this->configurePasswords();
+        $this->configureTrustedProxies();
         $this->configureUrls();
     }
 
@@ -55,8 +58,39 @@ class AppServiceProvider extends ServiceProvider
         Password::defaults(fn () => Password::min(12));
     }
 
+    private function configureTrustedProxies(): void
+    {
+        // Only the proxies listed in TRUSTED_PROXIES may speak for the client.
+        // With none configured the X-Forwarded-* headers are ignored entirely,
+        // so nobody can claim a different host, scheme or address by sending
+        // them. This lives here rather than in bootstrap/app.php because that
+        // callback runs before the configuration is loaded.
+        //
+        // HEADER_X_FORWARDED_AWS_ELB is deliberately absent: Smallgate is self
+        // hosted behind a single reverse proxy.
+        if ($proxies = config('smallgate.trusted_proxies')) {
+            TrustProxies::at($proxies);
+        }
+
+        TrustProxies::withHeaders(
+            Request::HEADER_X_FORWARDED_FOR
+            | Request::HEADER_X_FORWARDED_HOST
+            | Request::HEADER_X_FORWARDED_PORT
+            | Request::HEADER_X_FORWARDED_PROTO
+        );
+    }
+
     private function configureUrls(): void
     {
+        // Pin every generated URL to APP_URL instead of letting it follow the
+        // incoming request. A password reset link must not depend on the Host
+        // header of the request that triggered the mail -- TrustHosts already
+        // rejects a foreign Host, this is the second layer and additionally
+        // covers queue workers and console commands, where no request exists.
+        if ($root = (string) config('app.url')) {
+            URL::forceRootUrl($root);
+        }
+
         // Every generated URL is https in production, so a reset or invitation
         // link can never be handed out over plain http.
         if ($this->app->isProduction()) {

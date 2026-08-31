@@ -40,6 +40,48 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Trusted Hosts and Proxies
+    |--------------------------------------------------------------------------
+    |
+    | Password reset and invitation mails contain absolute links. Laravel builds
+    | those from the incoming request, so without an allowlist a forged Host
+    | header puts an attacker's domain into a mail that carries a valid token.
+    | Requests whose Host is not listed here are rejected outside the local
+    | environment; AppServiceProvider additionally pins every generated URL to
+    | APP_URL, which also covers queue workers and console commands.
+    |
+    | The host of APP_URL is always trusted. TRUSTED_HOSTS adds further names,
+    | comma separated -- a second domain, or the internal name a health check
+    | uses. Subdomains are deliberately NOT trusted: preview subdomains are a
+    | separate service, not the portal.
+    |
+    | TRUSTED_PROXIES lists the reverse proxies allowed to set X-Forwarded-*.
+    | With none configured those headers are ignored, which is the safe default
+    | but makes the application see http behind a TLS terminating proxy. Use
+    | concrete addresses or CIDR ranges. "*" trusts whatever sits in front of
+    | the application and is only acceptable when nothing else can reach it.
+    |
+    */
+
+    // Regular expressions, because that is what Symfony's trusted host check
+    // takes. Anchored and quoted, so no configured name can match more than
+    // itself.
+    'trusted_hosts' => array_map(
+        static fn (string $host): string => '^'.preg_quote($host, '#').'$',
+        array_values(array_filter(array_map('trim', array_merge(
+            [(string) parse_url((string) env('APP_URL', ''), PHP_URL_HOST)],
+            explode(',', (string) env('TRUSTED_HOSTS', ''))
+        ))))
+    ),
+
+    'trusted_proxies' => match ($proxies = trim((string) env('TRUSTED_PROXIES', ''))) {
+        '' => null,
+        '*' => '*',
+        default => array_values(array_filter(array_map('trim', explode(',', $proxies)))),
+    },
+
+    /*
+    |--------------------------------------------------------------------------
     | Legal Pages
     |--------------------------------------------------------------------------
     |

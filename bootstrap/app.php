@@ -15,6 +15,22 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Reject any request whose Host header the operator has not configured.
+        // Password reset and invitation links are absolute URLs built from the
+        // request, so an accepted foreign Host would mail a valid token to an
+        // attacker's domain. Subdomains are not trusted: preview subdomains are
+        // a separate service. The closure is deliberate -- this callback runs
+        // before the configuration is loaded, TrustHosts evaluates it per
+        // request. Trusted proxies are configured in AppServiceProvider for the
+        // same reason (that API takes a value, not a closure).
+        //
+        // Note that Laravel skips this check in the local environment and while
+        // running tests; see TrustedHostTest for what is asserted instead.
+        $middleware->trustHosts(
+            at: fn (): array => config('smallgate.trusted_hosts'),
+            subdomains: false,
+        );
+
         // AuthenticateSession binds every session to the current password hash,
         // so changing or resetting a password logs out all other sessions.
         // EnsureAccountIsActive makes blocking an account effective immediately.

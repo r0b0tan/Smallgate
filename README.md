@@ -121,6 +121,19 @@ Passwort, unbekannte Adresse, gesperrtes Konto und deaktivierten Kunden. Auch
 „Passwort vergessen“ antwortet immer gleich, unabhängig davon, ob die Adresse
 existiert.
 
+**Host-Header und generierte Links** – Passwort-Reset- und Einladungsmails
+enthalten absolute URLs. Damit ein gefälschter `Host`-Header kein gültiges Token
+auf eine fremde Domain schicken kann, greifen zwei Schichten: Anfragen mit einem
+nicht konfigurierten `Host` werden abgewiesen (`TRUSTED_HOSTS`, außerhalb von
+`local`; Subdomains gelten *nicht* als vertrauenswürdig), und jede generierte URL
+wird fest an `APP_URL` gebunden – auch in Queue-Workern und Konsolenbefehlen, wo
+es gar keine Anfrage gibt. `X-Forwarded-*` wird nur von den in `TRUSTED_PROXIES`
+genannten Proxys akzeptiert; ohne Eintrag werden die Header ignoriert.
+
+Der vorgeschaltete Webserver sollte unbekannte Hosts zusätzlich selbst abweisen
+(bei nginx ein `default_server` mit `return 444`). Die mitgelieferte
+nginx-Konfiguration ist eine Entwicklungskonfiguration und tut das bewusst nicht.
+
 **Sitzungen** – Datenbank-Treiber, `HttpOnly`, `SameSite=lax`, `Secure` in
 Produktion. Nach Passwortänderung und -Reset werden alle anderen Sitzungen
 gelöscht und Remember-Me-Tokens verworfen. Ein gesperrter Benutzer oder ein
@@ -215,9 +228,20 @@ Vor dem Produktivbetrieb zwingend setzen:
 APP_ENV=production
 APP_DEBUG=false
 APP_KEY=<php artisan key:generate>
+APP_URL=https://portal.example.de
 SESSION_SECURE_COOKIE=true
 LOG_LEVEL=info
+
+# Nur nötig, wenn das Portal unter weiteren Namen erreichbar ist.
+TRUSTED_HOSTS=
+# Adressen oder CIDR-Bereiche des Reverse Proxy, der TLS terminiert.
+TRUSTED_PROXIES=
 ```
+
+`APP_URL` ist nicht kosmetisch: Es ist die kanonische Basis für jeden
+generierten Link und gleichzeitig der erste vertrauenswürdige Host. Ohne
+`TRUSTED_PROXIES` sieht die Anwendung hinter einem TLS-terminierenden Proxy
+`http` statt `https`.
 
 `SESSION_DOMAIN` bleibt leer. Das Session-Cookie darf niemals auf die
 Parent-Domain gesetzt werden – die Begründung steht in ADR 0001.
