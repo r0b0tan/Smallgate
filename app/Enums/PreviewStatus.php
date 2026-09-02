@@ -29,13 +29,27 @@ enum PreviewStatus: string
         return $this === self::Available;
     }
 
+    /**
+     * What provisioning offers to do from the status the preview is in. The
+     * button is the only way the status changes, so it has to name the outcome.
+     */
+    public function provisionActionLabel(): string
+    {
+        return match ($this) {
+            self::Available => 'Erneut bereitstellen',
+            self::Disabled => 'Wieder freigeben',
+            self::Failed => 'Erneut versuchen',
+            self::Draft, self::Provisioning => 'Bereitstellen',
+        };
+    }
+
     public function badgeClasses(): string
     {
         return match ($this) {
             self::Draft => 'bg-white/5 text-white/60 ring-white/10',
             self::Provisioning => 'bg-sky-400/10 text-sky-300 ring-sky-400/30',
             self::Available => 'bg-accent/10 text-accent ring-accent/30',
-            self::Disabled => 'bg-white/5 text-white/40 ring-white/10',
+            self::Disabled => 'bg-white/5 text-white/50 ring-white/10',
             self::Failed => 'bg-red-400/10 text-red-300 ring-red-400/30',
         };
     }

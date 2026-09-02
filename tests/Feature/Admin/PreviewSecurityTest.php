@@ -24,7 +24,6 @@ it('refuses a preview target outside the allowed roots', function (string $targe
             'hostname' => 'test.'.config('previews.base_domain'),
             'target_type' => 'static_directory',
             'target' => $target,
-            'status' => 'available',
         ])
         ->assertSessionHasErrors('target');
 
@@ -48,7 +47,6 @@ it('refuses an upstream target that is not allow-listed', function () {
             'hostname' => 'test.'.config('previews.base_domain'),
             'target_type' => 'upstream_url',
             'target' => 'https://169.254.169.254/latest/meta-data/',
-            'status' => 'available',
         ])
         ->assertSessionHasErrors('target');
 
@@ -67,7 +65,6 @@ it('refuses a hostname outside the preview base domain', function (string $hostn
             'hostname' => $hostname,
             'target_type' => 'static_directory',
             'target' => '/srv/previews/test',
-            'status' => 'available',
         ])
         ->assertSessionHasErrors('hostname');
 
@@ -93,9 +90,74 @@ it('refuses a duplicate preview hostname', function () {
             'hostname' => $existing->hostname,
             'target_type' => 'static_directory',
             'target' => '/srv/previews/kollision',
-            'status' => 'available',
         ])
         ->assertSessionHasErrors('hostname');
+});
+
+it('completes the subdomain with the configured base domain', function () {
+    $admin = $this->admin();
+    $project = Project::factory()->create();
+
+    // The form only asks for the label -- the base domain cannot be mistyped
+    // because it is never typed.
+    $this->actingAs($admin)->post(route('admin.projects.previews.store', $project), [
+        'name' => 'Stand KW12',
+        'slug' => 'kw12',
+        'hostname' => 'holzmann',
+        'target_type' => 'static_directory',
+        'target' => '/srv/previews/holzmann',
+    ])->assertRedirect();
+
+    expect(Preview::sole()->hostname)->toBe('holzmann.'.config('previews.base_domain'));
+});
+
+it('never takes the status from the form', function () {
+    $admin = $this->admin();
+    $project = Project::factory()->create();
+
+    // Releasing a preview is an action, not a form field. A status smuggled
+    // into the request must not make it visible to the customer.
+    $this->actingAs($admin)->post(route('admin.projects.previews.store', $project), [
+        'name' => 'Geschmuggelt',
+        'slug' => 'geschmuggelt',
+        'hostname' => 'geschmuggelt',
+        'target_type' => 'static_directory',
+        'target' => '/srv/previews/geschmuggelt',
+        'status' => 'available',
+    ])->assertRedirect();
+
+    $preview = Preview::sole();
+    expect($preview->status)->toBe(PreviewStatus::Draft)
+        ->and($preview->url())->toBeNull();
+
+    $this->actingAs($admin)->patch(route('admin.projects.previews.update', [$project, $preview]), [
+        'name' => 'Geschmuggelt',
+        'slug' => 'geschmuggelt',
+        'hostname' => 'geschmuggelt',
+        'target_type' => 'static_directory',
+        'target' => '/srv/previews/geschmuggelt',
+        'status' => 'available',
+    ])->assertRedirect();
+
+    expect($preview->fresh()->status)->toBe(PreviewStatus::Draft);
+});
+
+it('requires hostname and target once a preview is live', function () {
+    $admin = $this->admin();
+    $project = Project::factory()->create();
+    $preview = Preview::factory()->for_project($project)->available()->create();
+
+    // A draft may be incomplete; something the customer is being offered may not.
+    $this->actingAs($admin)
+        ->from(route('admin.projects.previews.edit', [$project, $preview]))
+        ->patch(route('admin.projects.previews.update', [$project, $preview]), [
+            'name' => $preview->name,
+            'slug' => $preview->slug,
+            'hostname' => '',
+            'target_type' => 'static_directory',
+            'target' => '',
+        ])
+        ->assertSessionHasErrors(['hostname', 'target']);
 });
 
 it('allows a draft preview without hostname or target', function () {
@@ -108,7 +170,6 @@ it('allows a draft preview without hostname or target', function () {
         'hostname' => '',
         'target_type' => 'static_directory',
         'target' => '',
-        'status' => 'draft',
     ])->assertRedirect();
 
     $preview = Preview::sole();
@@ -144,6 +205,57 @@ it('offers administrators a host url in any status while the customer url stays 
     expect($preview->fresh()->hostUrl())->toBeNull();
 });
 
+/* ------------------------------------------------------------------- the ui */
+
+it('manages previews on the project page itself', function () {
+    $admin = $this->admin();
+    $project = Project::factory()->create();
+    $preview = Preview::factory()->for_project($project)->available()->create(['name' => 'Stand KW12']);
+
+    // One list, and every action on it -- there is no second preview page to
+    // wonder about.
+    $this->actingAs($admin)
+        ->get(route('admin.projects.show', $project))
+        ->assertOk()
+        ->assertSee('Stand KW12')
+        ->assertSee(route('admin.projects.previews.provision', [$project, $preview]), escape: false)
+        ->assertSee(route('admin.projects.previews.disable', [$project, $preview]), escape: false)
+        ->assertSee(route('admin.projects.previews.edit', [$project, $preview]), escape: false)
+        ->assertSee(route('admin.projects.previews.destroy', [$project, $preview]), escape: false);
+});
+
+it('asks only for the subdomain label in the form', function () {
+    $admin = $this->admin();
+    $project = Project::factory()->create();
+    $preview = Preview::factory()->for_project($project)->available()->create();
+
+    $label = Str::before($preview->hostname, '.'.config('previews.base_domain'));
+
+    $this->actingAs($admin)
+        ->get(route('admin.projects.previews.edit', [$project, $preview]))
+        ->assertOk()
+        // The label goes in the input, the base domain sits beside it as fixed
+        // text -- so it can neither be mistyped nor deleted.
+        ->assertSee('value="'.$label.'"', escape: false)
+        ->assertSee('.'.config('previews.base_domain'))
+        // And the status is not something the form offers to change.
+        ->assertDontSee('name="status"', escape: false);
+});
+
+it('puts open previews on the administrator dashboard', function () {
+    $admin = $this->admin();
+    $draft = Preview::factory()->create(['name' => 'Wartet auf Freigabe']);
+    $live = Preview::factory()->available()->create(['name' => 'Laeuft schon']);
+
+    $this->actingAs($admin)
+        ->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertSee('Wartet auf Freigabe')
+        ->assertDontSee('Laeuft schon');
+
+    expect($live->needsProvisioning())->toBeFalse();
+});
+
 /* ------------------------------------------------------------- provisioner */
 
 it('binds the null provisioner in the mvp', function () {
@@ -159,7 +271,7 @@ it('marks a valid preview available without touching the server', function () {
 
     $this->actingAs($admin)
         ->post(route('admin.projects.previews.provision', [$project, $preview]))
-        ->assertRedirect(route('admin.projects.previews.index', $project))
+        ->assertRedirect(route('admin.projects.show', $project))
         ->assertSessionHas('status');
 
     $preview->refresh();
@@ -185,6 +297,47 @@ it('fails provisioning rather than trusting a bad target', function () {
         ->and($preview->provisioned_at)->toBeNull();
 });
 
+it('takes a preview off the portal again without touching the server', function () {
+    $admin = $this->admin();
+    $project = Project::factory()->create();
+    $preview = Preview::factory()->for_project($project)->available()->create();
+
+    $this->actingAs($admin)
+        ->post(route('admin.projects.previews.disable', [$project, $preview]))
+        ->assertRedirect(route('admin.projects.show', $project))
+        ->assertSessionHas('status');
+
+    $preview->refresh();
+    expect($preview->status)->toBe(PreviewStatus::Disabled)
+        ->and($preview->url())->toBeNull()
+        // Administrators can still reach it to check what the customer had.
+        ->and($preview->hostUrl())->not->toBeNull();
+});
+
+it('flags a preview that was edited after it went live', function () {
+    $admin = $this->admin();
+    $project = Project::factory()->create();
+    $preview = Preview::factory()->for_project($project)->available()->create([
+        'status' => PreviewStatus::Draft,
+    ]);
+
+    $this->actingAs($admin)->post(route('admin.projects.previews.provision', [$project, $preview]));
+    expect($preview->fresh()->needsProvisioning())->toBeFalse();
+
+    $this->travel(1)->minutes();
+
+    $this->actingAs($admin)->patch(route('admin.projects.previews.update', [$project, $preview]), [
+        'name' => 'Anderer Name',
+        'slug' => $preview->slug,
+        'hostname' => $preview->hostname,
+        'target_type' => 'static_directory',
+        'target' => $preview->target,
+    ])->assertRedirect();
+
+    // What is configured is no longer what was last provisioned.
+    expect($preview->fresh()->needsProvisioning())->toBeTrue();
+});
+
 it('rejects a preview of another project through the nested route', function () {
     $admin = $this->admin();
     $project = Project::factory()->create();
@@ -196,6 +349,10 @@ it('rejects a preview of another project through the nested route', function () 
 
     $this->actingAs($admin)
         ->post(route('admin.projects.previews.provision', [$project, $otherPreview]))
+        ->assertNotFound();
+
+    $this->actingAs($admin)
+        ->post(route('admin.projects.previews.disable', [$project, $otherPreview]))
         ->assertNotFound();
 });
 

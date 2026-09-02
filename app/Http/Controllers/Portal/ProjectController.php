@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Portal;
 use App\Http\Controllers\Controller;
 use App\Models\Preview;
 use App\Models\Project;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -35,7 +36,14 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function showPreview(Request $request, string $project, string $preview): View
+    /**
+     * The preview itself is the destination, so this sends the customer
+     * straight there instead of showing a page whose only content is a button.
+     *
+     * The route stays because links to it live in mails and bookmarks, and
+     * because a preview that is not up needs somewhere to say so.
+     */
+    public function showPreview(Request $request, string $project, string $preview): RedirectResponse|View
     {
         $projectModel = Project::query()
             ->visibleTo($request->user())
@@ -50,6 +58,12 @@ class ProjectController extends Controller
             ->firstOrFail();
 
         $this->authorize('view', $previewModel);
+
+        // url() is gated on the status and on the configured base domain, so
+        // this can only ever leave for a host the portal itself controls.
+        if (($url = $previewModel->url()) !== null) {
+            return redirect()->away($url);
+        }
 
         return view('portal.previews.show', [
             'project' => $projectModel,

@@ -2,8 +2,8 @@
 
 @section('title', 'Zugänge')
 @section('breadcrumb')
-    <a href="{{ route('admin.customers.index') }}" class="hover:text-white/60">Kunden</a> /
-    <a href="{{ route('admin.customers.show', $customer) }}" class="hover:text-white/60">{{ $customer->name }}</a>
+    <a href="{{ route('admin.customers.index') }}" class="hover:text-white">Kunden</a> /
+    <a href="{{ route('admin.customers.show', $customer) }}" class="hover:text-white">{{ $customer->name }}</a>
 @endsection
 @section('header', 'Zugänge verwalten')
 @section('subheader', 'Zugänge entstehen ausschließlich über eine Einladung – es gibt keine Registrierung.')
@@ -11,10 +11,10 @@
 @section('content')
     <div class="grid gap-6 lg:grid-cols-3">
         <div class="sg-card lg:col-span-1">
-            <h2 class="font-display text-lg font-semibold text-white">Benutzer einladen</h2>
+            <h2 class="text-lg font-semibold text-white">Benutzer einladen</h2>
 
             @if (! $customer->is_active)
-                <p class="mt-4 rounded-lg bg-white/5 px-4 py-3 text-sm text-white/50">
+                <p class="mt-4 rounded-lg bg-white/5 px-4 py-3 text-sm sg-faint">
                     Der Kunde ist deaktiviert. Es können keine Einladungen versendet werden.
                 </p>
             @else
@@ -27,7 +27,7 @@
                     <x-field name="name" label="Name" required />
                     <x-field name="email" label="E-Mail-Adresse" type="email" required />
 
-                    <p class="text-xs text-white/35">
+                    <p class="text-xs sg-faint">
                         Die eingeladene Person vergibt ihr Passwort selbst. Der Link ist
                         {{ config('smallgate.invitations.ttl_hours') }} Stunden gültig und nur einmal verwendbar.
                     </p>
@@ -39,7 +39,7 @@
 
         <div class="space-y-6 lg:col-span-2">
             <div class="sg-card">
-                <h2 class="font-display text-lg font-semibold text-white">Bestehende Zugänge</h2>
+                <h2 class="text-lg font-semibold text-white">Bestehende Zugänge</h2>
 
                 @if ($users->isEmpty())
                     <div class="mt-4"><x-empty message="Noch keine aktiven Zugänge." /></div>
@@ -49,7 +49,7 @@
                             <li class="flex flex-wrap items-center justify-between gap-3 py-3">
                                 <div class="min-w-0">
                                     <p class="truncate text-sm font-medium text-white">{{ $user->name }}</p>
-                                    <p class="truncate text-xs text-white/35">{{ $user->email }}</p>
+                                    <p class="truncate text-xs sg-faint">{{ $user->email }}</p>
                                 </div>
 
                                 <div class="flex items-center gap-3">
@@ -76,7 +76,7 @@
             </div>
 
             <div class="sg-card">
-                <h2 class="font-display text-lg font-semibold text-white">Einladungen</h2>
+                <h2 class="text-lg font-semibold text-white">Einladungen</h2>
 
                 @if ($invitations->isEmpty())
                     <div class="mt-4"><x-empty message="Bisher wurden keine Einladungen versendet." /></div>
@@ -86,7 +86,7 @@
                             <li class="flex flex-wrap items-center justify-between gap-3 py-3">
                                 <div class="min-w-0">
                                     <p class="truncate text-sm text-white">{{ $invitation->email }}</p>
-                                    <p class="truncate text-xs text-white/35">
+                                    <p class="truncate text-xs sg-faint">
                                         {{ $invitation->statusLabel() }} ·
                                         gültig bis {{ $invitation->expires_at->format('d.m.Y H:i') }}
                                     </p>

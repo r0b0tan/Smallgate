@@ -13,17 +13,17 @@
                 <a href="{{ route('portal.projects.show', $project) }}"
                    class="sg-card block transition-colors hover:bg-surface-raised">
                     <div class="flex items-start justify-between gap-3">
-                        <h2 class="font-display text-lg font-semibold text-white">{{ $project->name }}</h2>
+                        <h2 class="text-lg font-semibold text-white">{{ $project->name }}</h2>
                         <span class="sg-badge {{ $project->status->badgeClasses() }}">
                             {{ $project->status->label() }}
                         </span>
                     </div>
 
                     @if ($project->description)
-                        <p class="mt-3 line-clamp-3 text-sm text-white/50">{{ $project->description }}</p>
+                        <p class="mt-3 line-clamp-3 text-sm sg-faint">{{ $project->description }}</p>
                     @endif
 
-                    <p class="mt-4 text-xs text-white/35">
+                    <p class="mt-4 text-xs sg-faint">
                         {{ trans_choice('{0}Keine Vorschau|{1}1 Vorschau|[2,*]:count Vorschauen',
                             $project->previews_count, ['count' => $project->previews_count]) }}
                         verfügbar

@@ -7,7 +7,7 @@
 
     {{-- Deliberately one message for "unknown", "expired" and "already used":
          the page must not confirm that a token ever existed. --}}
-    <p class="mt-2 text-sm text-white/50">
+    <p class="mt-2 text-sm sg-faint">
         Dieser Einladungslink ist abgelaufen, wurde bereits verwendet oder ist unbekannt.
         Bitte fordern Sie bei Ihrem Ansprechpartner eine neue Einladung an.
     </p>

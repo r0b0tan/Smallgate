@@ -8,7 +8,7 @@
     {{-- Placeholder page. All values come from environment variables, so no
          personal data of the operator is stored in the repository. Replace the
          wording below with the reviewed legal text before going live. --}}
-    <div class="mt-4 space-y-4 text-sm text-white/60">
+    <div class="mt-4 space-y-4 text-sm sg-muted">
         <section>
             <h2 class="font-medium text-white/80">Angaben gemäß § 5 DDG</h2>
             <p class="mt-1 whitespace-pre-line">{{ $legal['company'] }}
@@ -44,7 +44,7 @@
             </section>
         @endif
 
-        <p class="border-t border-white/5 pt-4 text-xs text-white/30">
+        <p class="border-t border-white/5 pt-4 text-xs sg-faint">
             Platzhalterseite. Der endgültige Text ist vor dem Produktivbetrieb rechtlich zu prüfen.
         </p>
     </div>

@@ -20,14 +20,28 @@
                       :value="request('status')" :options="$statuses" />
         </div>
         <button type="submit" class="sg-btn-secondary">Filtern</button>
+
+        @if ($filtered)
+            <a href="{{ route('admin.projects.index') }}" class="sg-btn-secondary">Zurücksetzen</a>
+        @endif
     </form>
 
     @if ($projects->isEmpty())
-        <x-empty message="Keine Projekte gefunden." />
+        {{-- An empty result after filtering means something different from an
+             empty database, and needs a different way out. --}}
+        @if ($filtered)
+            <x-empty message="Keine Projekte passen zu diesem Filter.">
+                <a href="{{ route('admin.projects.index') }}" class="sg-btn-secondary">Filter zurücksetzen</a>
+            </x-empty>
+        @else
+            <x-empty message="Noch keine Projekte angelegt.">
+                <a href="{{ route('admin.projects.create') }}" class="sg-btn-primary">Projekt anlegen</a>
+            </x-empty>
+        @endif
     @else
         <div class="overflow-x-auto rounded-xl ring-1 ring-white/5">
             <table class="min-w-full divide-y divide-white/5 text-sm">
-                <thead class="bg-surface text-left text-xs uppercase tracking-wide text-white/40">
+                <thead class="bg-surface text-left text-xs uppercase tracking-wide sg-muted">
                     <tr>
                         <th class="px-4 py-3 font-medium">Projekt</th>
                         <th class="px-4 py-3 font-medium">Kunde</th>
@@ -43,11 +57,11 @@
                                 <a href="{{ route('admin.projects.show', $project) }}"
                                    class="font-medium text-white hover:text-accent">{{ $project->name }}</a>
                             </td>
-                            <td class="px-4 py-3 text-white/60">
+                            <td class="px-4 py-3 sg-muted">
                                 <a href="{{ route('admin.customers.show', $project->customer) }}"
                                    class="hover:text-accent">{{ $project->customer->name }}</a>
                             </td>
-                            <td class="px-4 py-3 text-white/60">{{ $project->previews_count }}</td>
+                            <td class="px-4 py-3 sg-muted">{{ $project->previews_count }}</td>
                             <td class="px-4 py-3">
                                 <span class="sg-badge {{ $project->status->badgeClasses() }}">
                                     {{ $project->status->label() }}
@@ -55,7 +69,7 @@
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <a href="{{ route('admin.projects.edit', $project) }}"
-                                   class="text-xs text-white/50 hover:text-accent">Bearbeiten</a>
+                                   class="text-xs sg-faint hover:text-accent">Bearbeiten</a>
                             </td>
                         </tr>
                     @endforeach

@@ -8,7 +8,7 @@
     {{-- Placeholder page. The technical statements below describe what the
          application actually does, so they stay accurate; the legal wording
          still has to be reviewed before going live. --}}
-    <div class="mt-4 space-y-4 text-sm text-white/60">
+    <div class="mt-4 space-y-4 text-sm sg-muted">
         <section>
             <h2 class="font-medium text-white/80">Verantwortlich</h2>
             <p class="mt-1 whitespace-pre-line">{{ $legal['company'] }}
@@ -44,7 +44,7 @@
             </p>
         </section>
 
-        <p class="border-t border-white/5 pt-4 text-xs text-white/30">
+        <p class="border-t border-white/5 pt-4 text-xs sg-faint">
             Platzhalterseite. Der endgültige Text ist vor dem Produktivbetrieb rechtlich zu prüfen.
         </p>
     </div>

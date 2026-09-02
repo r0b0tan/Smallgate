@@ -14,7 +14,7 @@
                class="rounded border-white/20 bg-white/5 text-accent focus:ring-accent">
         Kunde ist aktiv
     </label>
-    <p class="text-xs text-white/35">
+    <p class="text-xs sg-faint">
         Ein deaktivierter Kunde verliert sofort den Zugriff auf das Portal – alle Zugänge dieses Kunden
         werden bei der nächsten Anfrage abgemeldet.
     </p>

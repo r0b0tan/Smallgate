@@ -35,6 +35,7 @@ class ProjectController extends Controller
             'projects' => $projects,
             'customers' => Customer::query()->orderBy('name')->get(),
             'statuses' => ProjectStatus::options(),
+            'filtered' => $request->filled('customer') || $request->filled('status'),
         ]);
     }
 

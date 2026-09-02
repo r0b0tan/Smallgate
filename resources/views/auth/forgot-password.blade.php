@@ -4,7 +4,7 @@
 
 @section('card')
     <h1 class="font-display text-xl font-bold text-white">Passwort vergessen</h1>
-    <p class="mt-1 text-sm text-white/50">
+    <p class="mt-1 text-sm sg-faint">
         Wir senden Ihnen einen Link, mit dem Sie ein neues Passwort vergeben können.
     </p>
 

@@ -2,8 +2,8 @@
 
 @section('title', 'Kunde bearbeiten')
 @section('breadcrumb')
-    <a href="{{ route('admin.customers.index') }}" class="hover:text-white/60">Kunden</a> /
-    <a href="{{ route('admin.customers.show', $customer) }}" class="hover:text-white/60">{{ $customer->name }}</a>
+    <a href="{{ route('admin.customers.index') }}" class="hover:text-white">Kunden</a> /
+    <a href="{{ route('admin.customers.show', $customer) }}" class="hover:text-white">{{ $customer->name }}</a>
 @endsection
 @section('header', 'Kunde bearbeiten')
 

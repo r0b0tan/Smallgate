@@ -2,7 +2,7 @@
 
 @section('title', 'Kunde anlegen')
 @section('breadcrumb')
-    <a href="{{ route('admin.customers.index') }}" class="hover:text-white/60">Kunden</a>
+    <a href="{{ route('admin.customers.index') }}" class="hover:text-white">Kunden</a>
 @endsection
 @section('header', 'Kunde anlegen')
 

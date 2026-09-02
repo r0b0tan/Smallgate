@@ -7,7 +7,7 @@
 @section('content')
     <div class="grid gap-6 lg:grid-cols-2">
         <div class="sg-card">
-            <h2 class="font-display text-lg font-semibold text-white">Angaben</h2>
+            <h2 class="text-lg font-semibold text-white">Angaben</h2>
 
             <form method="POST" action="{{ route('profile.update') }}" class="mt-4 space-y-4">
                 @csrf
@@ -24,17 +24,17 @@
 
             <dl class="mt-6 space-y-2 border-t border-white/5 pt-4 text-sm">
                 <div class="flex justify-between">
-                    <dt class="text-white/40">Rolle</dt>
+                    <dt class="sg-muted">Rolle</dt>
                     <dd class="text-white/70">{{ $user->role->label() }}</dd>
                 </div>
                 @if ($user->customer)
                     <div class="flex justify-between">
-                        <dt class="text-white/40">Kunde</dt>
+                        <dt class="sg-muted">Kunde</dt>
                         <dd class="text-white/70">{{ $user->customer->name }}</dd>
                     </div>
                 @endif
                 <div class="flex justify-between">
-                    <dt class="text-white/40">Letzte Anmeldung</dt>
+                    <dt class="sg-muted">Letzte Anmeldung</dt>
                     <dd class="text-white/70">
                         {{ $user->last_login_at?->format('d.m.Y H:i') ?? '–' }}
                     </dd>
@@ -43,8 +43,8 @@
         </div>
 
         <div class="sg-card">
-            <h2 class="font-display text-lg font-semibold text-white">Passwort ändern</h2>
-            <p class="mt-1 text-sm text-white/50">
+            <h2 class="text-lg font-semibold text-white">Passwort ändern</h2>
+            <p class="mt-1 text-sm sg-faint">
                 Nach der Änderung werden alle anderen Sitzungen abgemeldet.
             </p>
 

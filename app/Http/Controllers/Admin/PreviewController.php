@@ -17,19 +17,13 @@ use Illuminate\View\View;
 /**
  * Previews are always addressed through their project, so a preview of another
  * project can never be reached through this controller by id alone.
+ *
+ * There is no index: the project page lists the previews and carries every
+ * action, so an administrator never has to work out which of two lists is the
+ * real one.
  */
 class PreviewController extends Controller
 {
-    public function index(Project $project): View
-    {
-        $this->authorize('managePreviews', $project);
-
-        return view('admin.previews.index', [
-            'project' => $project->load('customer'),
-            'previews' => $project->previews()->orderBy('name')->get(),
-        ]);
-    }
-
     public function create(Project $project): View
     {
         $this->authorize('managePreviews', $project);
@@ -37,10 +31,8 @@ class PreviewController extends Controller
         return view('admin.previews.create', [
             'project' => $project,
             'preview' => new Preview([
-                'status' => PreviewStatus::Draft->value,
                 'target_type' => PreviewTargetType::StaticDirectory->value,
             ]),
-            'statuses' => PreviewStatus::options(),
             'targetTypes' => PreviewTargetType::options(),
         ]);
     }
@@ -51,12 +43,15 @@ class PreviewController extends Controller
 
         $preview = new Preview;
         $preview->fill($request->validated());
-        // Explicit, never mass assigned: this is what scopes visibility.
+        // Explicit, never mass assigned: the first scopes visibility, the second
+        // decides whether the customer is offered the preview at all. A new
+        // preview always starts as a draft and is released by provisioning it.
         $preview->project_id = $project->id;
+        $preview->status = PreviewStatus::Draft;
         $preview->save();
 
-        return redirect()->route('admin.projects.previews.index', $project)
-            ->with('status', 'Vorschau wurde angelegt.');
+        return redirect()->route('admin.projects.show', $project)
+            ->with('status', 'Vorschau wurde als Entwurf angelegt. Zum Freigeben bereitstellen.');
     }
 
     public function edit(Project $project, Preview $preview): View
@@ -67,7 +62,6 @@ class PreviewController extends Controller
         return view('admin.previews.edit', [
             'project' => $project,
             'preview' => $preview,
-            'statuses' => PreviewStatus::options(),
             'targetTypes' => PreviewTargetType::options(),
         ]);
     }
@@ -80,8 +74,11 @@ class PreviewController extends Controller
         $preview->fill($request->validated());
         $preview->save();
 
-        return redirect()->route('admin.projects.previews.index', $project)
-            ->with('status', 'Vorschau wurde gespeichert.');
+        $message = $preview->status === PreviewStatus::Available
+            ? 'Vorschau wurde gespeichert. Zum Übernehmen erneut bereitstellen.'
+            : 'Vorschau wurde gespeichert.';
+
+        return redirect()->route('admin.projects.show', $project)->with('status', $message);
     }
 
     public function destroy(Project $project, Preview $preview): RedirectResponse
@@ -91,7 +88,7 @@ class PreviewController extends Controller
 
         $preview->delete();
 
-        return redirect()->route('admin.projects.previews.index', $project)
+        return redirect()->route('admin.projects.show', $project)
             ->with('status', 'Vorschau wurde gelöscht.');
     }
 
@@ -108,12 +105,39 @@ class PreviewController extends Controller
         $this->ensureBelongsToProject($project, $preview);
 
         $result = $provisioner->provision($preview);
+        $now = Carbon::now();
 
         $preview->status = $result->status;
-        $preview->provisioned_at = $result->successful ? Carbon::now() : null;
+        $preview->provisioned_at = $result->successful ? $now : null;
+
+        if ($result->successful) {
+            // Pin the two timestamps to the same moment. A later updated_at is
+            // what tells the administrator that the stored configuration has
+            // drifted from what was last provisioned.
+            $preview->updated_at = $now;
+        }
+
         $preview->save();
 
-        return redirect()->route('admin.projects.previews.index', $project)
+        return redirect()->route('admin.projects.show', $project)
+            ->with($result->successful ? 'status' : 'error', $result->message);
+    }
+
+    /**
+     * Take a preview off the portal again. The customer immediately stops being
+     * offered it; nothing on the server is touched.
+     */
+    public function disable(Project $project, Preview $preview, PreviewProvisioner $provisioner): RedirectResponse
+    {
+        $this->authorize('managePreviews', $project);
+        $this->ensureBelongsToProject($project, $preview);
+
+        $result = $provisioner->deprovision($preview);
+
+        $preview->status = $result->status;
+        $preview->save();
+
+        return redirect()->route('admin.projects.show', $project)
             ->with($result->successful ? 'status' : 'error', $result->message);
     }
 

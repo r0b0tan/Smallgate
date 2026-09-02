@@ -2,7 +2,7 @@
 
 @section('title', 'Projekt anlegen')
 @section('breadcrumb')
-    <a href="{{ route('admin.projects.index') }}" class="hover:text-white/60">Projekte</a>
+    <a href="{{ route('admin.projects.index') }}" class="hover:text-white">Projekte</a>
 @endsection
 @section('header', 'Projekt anlegen')
 

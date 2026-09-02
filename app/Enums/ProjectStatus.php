@@ -31,7 +31,7 @@ enum ProjectStatus: string
             self::Active => 'bg-accent/10 text-accent ring-accent/30',
             self::WaitingForFeedback => 'bg-amber-400/10 text-amber-300 ring-amber-400/30',
             self::Completed => 'bg-emerald-400/10 text-emerald-300 ring-emerald-400/30',
-            self::Archived => 'bg-white/5 text-white/40 ring-white/10',
+            self::Archived => 'bg-white/5 text-white/50 ring-white/10',
         };
     }
 

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\PreviewStatus;
 use App\Enums\PreviewTargetType;
 use App\Policies\PreviewPolicy;
+use Carbon\CarbonInterface;
 use Database\Factories\PreviewFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -16,10 +17,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * `project_id` and `provisioned_at` are not mass assignable: the first decides
- * who may see the preview, the second is owned by the provisioner.
+ * `project_id`, `status` and `provisioned_at` are not mass assignable: the
+ * first decides who may see the preview, the second whether the customer is
+ * offered it at all, and the third is owned by the provisioner. Status changes
+ * go through the provision and disable actions, never through a form field.
  */
-#[Fillable(['name', 'slug', 'hostname', 'target_type', 'target', 'status'])]
+#[Fillable(['name', 'slug', 'hostname', 'target_type', 'target'])]
 #[UsePolicy(PreviewPolicy::class)]
 class Preview extends Model
 {
@@ -74,7 +77,36 @@ class Preview extends Model
      */
     public function hostUrl(): ?string
     {
-        return $this->hostname === null ? null : 'https://'.$this->hostname;
+        $base = mb_strtolower((string) config('previews.base_domain'));
+
+        // Only ever a host below the configured base domain. Validation already
+        // enforces that on the way in; re-checking it here means a row changed
+        // outside the application cannot turn a preview link -- or the portal
+        // redirect built on it -- into a redirect to somewhere else entirely.
+        if ($this->hostname === null || $base === '' || ! str_ends_with($this->hostname, '.'.$base)) {
+            return null;
+        }
+
+        return 'https://'.$this->hostname;
+    }
+
+    /**
+     * What "last updated" means to the customer: when the preview was last put
+     * live, falling back to the last edit for one that was never provisioned.
+     */
+    public function lastUpdatedAt(): CarbonInterface
+    {
+        return $this->provisioned_at ?? $this->updated_at;
+    }
+
+    /**
+     * Edited since it was last provisioned, so what is configured is not what
+     * is live. provision() pins updated_at to provisioned_at, which is what
+     * makes the plain comparison meaningful.
+     */
+    public function needsProvisioning(): bool
+    {
+        return $this->provisioned_at === null || $this->updated_at->gt($this->provisioned_at);
     }
 
     public function setSlugAttribute(?string $value): void

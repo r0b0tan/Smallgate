@@ -4,7 +4,7 @@
 
 @section('card')
     <h1 class="font-display text-xl font-bold text-white">Zugang einrichten</h1>
-    <p class="mt-1 text-sm text-white/50">
+    <p class="mt-1 text-sm sg-faint">
         Sie richten den Zugang für
         <span class="text-white">{{ $invitation->email }}</span>
         @if ($invitation->customer)

@@ -91,7 +91,7 @@ it('lets an administrator create a project and a preview', function () {
         'target_type' => 'static_directory',
         'target' => '/srv/previews/holzmann/kw12',
         'status' => 'available',
-    ])->assertRedirect(route('admin.projects.previews.index', $project));
+    ])->assertRedirect(route('admin.projects.show', $project));
 
     $preview = Preview::sole();
     expect($preview->project_id)->toBe($project->id)
@@ -116,7 +116,7 @@ dataset('admin endpoints', function () {
         'create project' => ['post', fn () => route('admin.projects.store')],
         'project detail' => ['get', fn () => route('admin.projects.show', Project::factory()->create())],
         'update project' => ['patch', fn () => route('admin.projects.update', Project::factory()->create())],
-        'preview list' => ['get', fn () => route('admin.projects.previews.index', Project::factory()->create())],
+        'preview form' => ['get', fn () => route('admin.projects.previews.create', Project::factory()->create())],
         'create preview' => ['post', fn () => route('admin.projects.previews.store', Project::factory()->create())],
     ];
 });

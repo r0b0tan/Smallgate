@@ -2,8 +2,7 @@
 
 @section('title', 'Vorschau anlegen')
 @section('breadcrumb')
-    <a href="{{ route('admin.projects.show', $project) }}" class="hover:text-white/60">{{ $project->name }}</a> /
-    <a href="{{ route('admin.projects.previews.index', $project) }}" class="hover:text-white/60">Vorschauen</a>
+    <a href="{{ route('admin.projects.show', $project) }}" class="hover:text-white">{{ $project->name }}</a>
 @endsection
 @section('header', 'Vorschau anlegen')
 
@@ -16,7 +15,7 @@
             @include('admin.previews._form')
 
             <div class="mt-6 flex justify-end gap-2">
-                <a href="{{ route('admin.projects.previews.index', $project) }}" class="sg-btn-secondary">Abbrechen</a>
+                <a href="{{ route('admin.projects.show', $project) }}" class="sg-btn-secondary">Abbrechen</a>
                 <button type="submit" class="sg-btn-primary">Vorschau anlegen</button>
             </div>
         </form>

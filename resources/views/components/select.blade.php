@@ -29,7 +29,7 @@
     </div>
 
     @if ($hint)
-        <p class="mt-1 text-xs text-white/35">{{ $hint }}</p>
+        <p class="mt-1 text-xs sg-faint">{{ $hint }}</p>
     @endif
 
     @error($name)

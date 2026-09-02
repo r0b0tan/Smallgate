@@ -8,6 +8,7 @@
  * explicit, administrator-only code.
  */
 
+use App\Enums\PreviewStatus;
 use App\Enums\UserRole;
 use App\Models\Customer;
 use App\Models\Invitation;
@@ -37,7 +38,10 @@ it('does not allow filling role, customer_id or is_active on a user', function (
 it('does not allow filling customer_id on a project or project_id on a preview', function () {
     expect((new Project)->isFillable('customer_id'))->toBeFalse()
         ->and((new Preview)->isFillable('project_id'))->toBeFalse()
-        ->and((new Preview)->isFillable('provisioned_at'))->toBeFalse();
+        ->and((new Preview)->isFillable('provisioned_at'))->toBeFalse()
+        // The status decides whether the customer is offered the preview, so it
+        // is set by the provision and disable actions alone.
+        ->and((new Preview)->isFillable('status'))->toBeFalse();
 });
 
 it('guards the invitation model entirely', function () {
@@ -153,16 +157,18 @@ it('ignores a customer reassignment smuggled into the preview form', function ()
         'name' => 'Vorschau',
         'slug' => 'vorschau',
         'target_type' => 'static_directory',
-        'status' => 'draft',
-        // The preview must belong to the project in the URL, not this one.
+        // The preview must belong to the project in the URL, not this one, and
+        // must not arrive already released to the customer.
         'project_id' => $otherProject->id,
         'provisioned_at' => now()->toDateTimeString(),
+        'status' => 'available',
     ])->assertRedirect();
 
     $preview = Preview::sole();
 
     expect($preview->project_id)->toBe($project->id)
-        ->and($preview->provisioned_at)->toBeNull();
+        ->and($preview->provisioned_at)->toBeNull()
+        ->and($preview->status)->toBe(PreviewStatus::Draft);
 });
 
 /* ---------------------------------------------- database level backstop */

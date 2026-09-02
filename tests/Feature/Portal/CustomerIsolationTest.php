@@ -17,6 +17,7 @@ it('shows a customer their own projects', function () {
     $user = $this->customerUser($customer);
 
     $mine = Project::factory()->for_customer($customer)->create(['name' => 'Website-Relaunch']);
+    Project::factory()->for_customer($customer)->create(['name' => 'Zweites Projekt']);
 
     $this->actingAs($user)
         ->get(route('portal.dashboard'))
@@ -27,6 +28,18 @@ it('shows a customer their own projects', function () {
         ->get(route('portal.projects.show', $mine))
         ->assertOk()
         ->assertSee('Website-Relaunch');
+});
+
+it('sends a customer with a single project straight to it', function () {
+    $customer = Customer::factory()->create();
+    $user = $this->customerUser($customer);
+
+    $only = Project::factory()->for_customer($customer)->create();
+
+    // A list of one is a click nobody should have to make.
+    $this->actingAs($user)
+        ->get(route('portal.dashboard'))
+        ->assertRedirect(route('portal.projects.show', $only));
 });
 
 it('shows a customer the available previews of their own project', function () {
@@ -44,12 +57,28 @@ it('shows a customer the available previews of their own project', function () {
     // A preview that is not available is not offered to the customer at all.
     $response->assertDontSee('Interner Entwurf');
 
+    // The entry in the list is the preview itself, not a page in front of it.
+    $response->assertSee('https://'.$available->hostname, escape: false);
+
+    // And the route that older mails link to goes straight there as well.
     $this->actingAs($user)
         ->get(route('portal.previews.show', [$project, $available]))
-        ->assertOk()
-        ->assertSee($available->hostname);
+        ->assertRedirect('https://'.$available->hostname);
 
     expect($draft->status->isVisitable())->toBeFalse();
+});
+
+it('explains rather than redirects when a preview is not reachable', function () {
+    $customer = Customer::factory()->create();
+    $user = $this->customerUser($customer);
+
+    $project = Project::factory()->for_customer($customer)->create();
+    $preview = Preview::factory()->for_project($project)->create(['name' => 'Noch nicht bereit']);
+
+    $this->actingAs($user)
+        ->get(route('portal.previews.show', [$project, $preview]))
+        ->assertOk()
+        ->assertSee('derzeit nicht erreichbar');
 });
 
 it('never shows the customer the preview target', function () {
@@ -59,9 +88,9 @@ it('never shows the customer the preview target', function () {
     $project = Project::factory()->for_customer($customer)->create();
     $preview = Preview::factory()->for_project($project)->available()->create();
 
-    // The target is a server path -- customers only ever see the hostname.
+    // The target is a server path -- customers are only ever handed the URL.
     $this->actingAs($user)
-        ->get(route('portal.previews.show', [$project, $preview]))
+        ->get(route('portal.projects.show', $project))
         ->assertOk()
         ->assertDontSee($preview->target);
 });
@@ -74,6 +103,7 @@ it('does not show a customer the projects of another customer', function () {
 
     $user = $this->customerUser($mine);
     Project::factory()->for_customer($mine)->create(['name' => 'Mein Projekt']);
+    Project::factory()->for_customer($mine)->create(['name' => 'Mein zweites Projekt']);
     $foreign = Project::factory()->for_customer($theirs)->create(['name' => 'Fremdes Projekt']);
 
     $response = $this->actingAs($user)->get(route('portal.dashboard'));

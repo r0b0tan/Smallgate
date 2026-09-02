@@ -7,7 +7,7 @@
 
     {{-- Deliberately identical for "does not exist" and "not yours": the page
          must not confirm that a foreign resource exists. --}}
-    <p class="mt-2 text-sm text-white/50">
+    <p class="mt-2 text-sm sg-faint">
         Diese Seite existiert nicht oder ist für Ihren Zugang nicht verfügbar.
     </p>
 

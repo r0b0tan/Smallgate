@@ -4,7 +4,7 @@
 
 @section('card')
     <h1 class="font-display text-xl font-bold text-white">Anmelden</h1>
-    <p class="mt-1 text-sm text-white/50">Bitte melden Sie sich mit Ihren Zugangsdaten an.</p>
+    <p class="mt-1 text-sm sg-faint">Bitte melden Sie sich mit Ihren Zugangsdaten an.</p>
 
     @if (session('status'))
         <div class="mt-4 rounded-lg bg-accent/10 px-4 py-3 text-sm text-accent ring-1 ring-inset ring-accent/30">
@@ -31,7 +31,7 @@
                  autocomplete="current-password" />
 
         <div class="flex items-center justify-between">
-            <label class="flex items-center gap-2 text-sm text-white/60">
+            <label class="flex items-center gap-2 text-sm sg-muted">
                 <input type="checkbox" name="remember" value="1"
                        class="rounded border-white/20 bg-white/5 text-accent focus:ring-accent">
                 Angemeldet bleiben
@@ -45,7 +45,7 @@
         <button type="submit" class="sg-btn-primary w-full">Anmelden</button>
     </form>
 
-    <p class="mt-6 border-t border-white/5 pt-4 text-xs text-white/30">
+    <p class="mt-6 border-t border-white/5 pt-4 text-xs sg-faint">
         Zugänge werden ausschließlich von {{ config('app.name') }} eingerichtet.
         Eine Registrierung ist nicht vorgesehen.
     </p>

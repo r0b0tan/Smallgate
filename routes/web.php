@@ -110,8 +110,9 @@ Route::middleware(['auth', 'admin'])
         Route::get('projekte/{project}/bearbeiten', [Admin\ProjectController::class, 'edit'])->name('projects.edit');
         Route::patch('projekte/{project}', [Admin\ProjectController::class, 'update'])->name('projects.update');
 
-        Route::get('projekte/{project}/vorschauen', [Admin\PreviewController::class, 'index'])
-            ->name('projects.previews.index');
+        // No separate preview index: previews are managed on the project page,
+        // which is the only place they exist as far as the administrator is
+        // concerned.
         Route::get('projekte/{project}/vorschauen/neu', [Admin\PreviewController::class, 'create'])
             ->name('projects.previews.create');
         Route::post('projekte/{project}/vorschauen', [Admin\PreviewController::class, 'store'])
@@ -122,8 +123,11 @@ Route::middleware(['auth', 'admin'])
             ->name('projects.previews.update');
         Route::delete('projekte/{project}/vorschauen/{preview}', [Admin\PreviewController::class, 'destroy'])
             ->name('projects.previews.destroy');
+        // Status is the result of an action, never a form field.
         Route::post('projekte/{project}/vorschauen/{preview}/bereitstellen', [Admin\PreviewController::class, 'provision'])
             ->name('projects.previews.provision');
+        Route::post('projekte/{project}/vorschauen/{preview}/deaktivieren', [Admin\PreviewController::class, 'disable'])
+            ->name('projects.previews.disable');
     });
 
 /*

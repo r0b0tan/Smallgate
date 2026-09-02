@@ -8,15 +8,15 @@
                     {{ config('app.name') }}
                 </span>
             </a>
-            <p class="mt-2 text-center text-sm text-white/40">Kundenportal</p>
+            <p class="mt-2 text-center text-sm sg-muted">Kundenportal</p>
 
             <div class="mt-8 sg-card">
                 @yield('card')
             </div>
 
-            <div class="mt-6 flex justify-center gap-4 text-xs text-white/30">
-                <a class="hover:text-white/60" href="{{ route('legal.imprint') }}">Impressum</a>
-                <a class="hover:text-white/60" href="{{ route('legal.privacy') }}">Datenschutz</a>
+            <div class="mt-6 flex justify-center gap-4 text-xs sg-faint">
+                <a class="hover:text-white" href="{{ route('legal.imprint') }}">Impressum</a>
+                <a class="hover:text-white" href="{{ route('legal.privacy') }}">Datenschutz</a>
             </div>
         </div>
     </div>
