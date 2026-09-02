@@ -57,10 +57,19 @@
                 @foreach ($previews as $preview)
                     <li class="flex flex-wrap items-center justify-between gap-3 py-3">
                         <div class="min-w-0">
-                            <p class="truncate text-sm font-medium text-white">{{ $preview->name }}</p>
-                            <p class="truncate font-mono text-xs text-white/35">
-                                {{ $preview->hostname ?? 'kein Hostname' }}
-                            </p>
+                            <a href="{{ route('admin.projects.previews.edit', [$project, $preview]) }}"
+                               class="block truncate text-sm font-medium text-white hover:text-accent">
+                                {{ $preview->name }}
+                            </a>
+                            {{-- Administrators may open a preview in any status, not just an available one. --}}
+                            @if ($url = $preview->hostUrl())
+                                <a href="{{ $url }}" target="_blank" rel="noopener noreferrer"
+                                   class="block truncate font-mono text-xs text-white/35 hover:text-accent">
+                                    {{ $preview->hostname }}
+                                </a>
+                            @else
+                                <p class="truncate font-mono text-xs text-white/35">kein Hostname</p>
+                            @endif
                         </div>
                         <span class="sg-badge {{ $preview->status->badgeClasses() }}">
                             {{ $preview->status->label() }}

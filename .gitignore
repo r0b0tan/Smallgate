@@ -25,3 +25,6 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Selbstsigniertes Zertifikat des lokalen Preview-Mocks
+/docker/nginx/certs/

@@ -126,6 +126,24 @@ it('does not offer a url for a preview that is not available', function () {
     expect($preview->fresh()->url())->toBeNull();
 });
 
+it('offers administrators a host url in any status while the customer url stays gated', function () {
+    $preview = Preview::factory()->available()->create();
+
+    expect($preview->hostUrl())->toBe('https://'.$preview->hostname)
+        ->and($preview->url())->toBe('https://'.$preview->hostname);
+
+    // A draft is reachable for the administrator who has to check it, but is
+    // never offered to the customer.
+    $preview->forceFill(['status' => PreviewStatus::Draft])->save();
+    $preview = $preview->fresh();
+
+    expect($preview->hostUrl())->toBe('https://'.$preview->hostname)
+        ->and($preview->url())->toBeNull();
+
+    $preview->forceFill(['hostname' => null])->save();
+    expect($preview->fresh()->hostUrl())->toBeNull();
+});
+
 /* ------------------------------------------------------------- provisioner */
 
 it('binds the null provisioner in the mvp', function () {

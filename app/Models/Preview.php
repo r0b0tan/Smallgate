@@ -64,11 +64,17 @@ class Preview extends Model
      */
     public function url(): ?string
     {
-        if ($this->hostname === null || ! $this->status->isVisitable()) {
-            return null;
-        }
+        return $this->status->isVisitable() ? $this->hostUrl() : null;
+    }
 
-        return 'https://'.$this->hostname;
+    /**
+     * The address of the preview host regardless of status. Administrators need
+     * it to check a preview before releasing it; customers are only ever
+     * offered url(), which keeps the status gate.
+     */
+    public function hostUrl(): ?string
+    {
+        return $this->hostname === null ? null : 'https://'.$this->hostname;
     }
 
     public function setSlugAttribute(?string $value): void

@@ -28,9 +28,15 @@
                     <div class="flex flex-wrap items-start justify-between gap-4">
                         <div class="min-w-0">
                             <h2 class="font-display text-lg font-semibold text-white">{{ $preview->name }}</h2>
-                            <p class="mt-1 font-mono text-xs text-white/40">
-                                {{ $preview->hostname ?? 'kein Hostname hinterlegt' }}
-                            </p>
+                            {{-- Administrators may open a preview in any status, not just an available one. --}}
+                            @if ($url = $preview->hostUrl())
+                                <a href="{{ $url }}" target="_blank" rel="noopener noreferrer"
+                                   class="mt-1 block font-mono text-xs text-white/40 hover:text-accent">
+                                    {{ $preview->hostname }}
+                                </a>
+                            @else
+                                <p class="mt-1 font-mono text-xs text-white/40">kein Hostname hinterlegt</p>
+                            @endif
                         </div>
                         <span class="sg-badge {{ $preview->status->badgeClasses() }}">
                             {{ $preview->status->label() }}
