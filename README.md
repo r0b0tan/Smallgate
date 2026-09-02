@@ -1,32 +1,47 @@
 # Smallgate
 
-Ein sehr kleines, selbst gehostetes Kundenportal für **Clickit Digital**.
+A very small, self-hosted client portal. Your clients sign in and see their own
+projects and the website previews that belong to them. Nothing else.
 
-Kunden melden sich an und sehen ausschließlich ihre eigenen Projekte und die
-dazugehörigen Website-Vorschauen. Mehr nicht.
+Built for web agencies, freelancers and in-house teams who keep clients in the
+loop by email and just need one honest place to answer *"can I see it?"* —
+without handing a third-party SaaS the client list. It is free software under
+the MIT licence: use it, change it, run it for your own clients.
 
-**Bewusst kein Bestandteil:** kein CRM, keine Rechnungen, kein Dokumentenarchiv,
-kein Chat, keine Benachrichtigungszentrale. Rechnungen, Dokumente und Absprachen
-laufen weiterhin per E-Mail.
+**Deliberately not included:** no CRM, no invoicing, no document archive, no
+chat, no notification centre. Invoices, documents and discussions stay in email,
+where they already work.
+
+## Screens in one paragraph
+
+An administrator creates customers, projects and previews, and invites the
+people who may see them. A customer signs in, lands on their project, and clicks
+a preview open in a new tab. There is no public sign-up: accounts exist only
+because somebody was invited.
 
 ## Stack
 
-| Baustein | Auswahl |
+| Part | Choice |
 |---|---|
 | Framework | Laravel 13 |
-| PHP | 8.4 (Container) |
-| Datenbank | PostgreSQL 17 |
-| Frontend | Blade + Tailwind CSS 4, ~20 Zeilen eigenes JavaScript |
-| Tests | Pest 5 / PHPUnit 13 gegen echtes PostgreSQL |
-| Entwicklung | Docker Compose, Mailpit für E-Mails |
+| PHP | 8.4 (in the container) |
+| Database | PostgreSQL 17 |
+| Frontend | Blade + Tailwind CSS 4, ~20 lines of own JavaScript |
+| Tests | Pest 5 / PHPUnit 13 against real PostgreSQL |
+| Development | Docker Compose, Mailpit for mail |
 
-Ein Laravel-Monolith. Keine REST-API, kein SPA-Framework, kein Redis, keine
-Microservices, keine externen Dienste.
+A Laravel monolith. No REST API, no SPA framework, no Redis, no microservices,
+no external services, no CDNs.
+
+## Requirements
+
+Docker with Compose. PHP, Composer and Node are **not** needed on the host —
+everything runs in the container.
+
+For production you additionally need a domain, a TLS-terminating reverse proxy
+and an SMTP server that can send invitation and password-reset mail.
 
 ## Setup
-
-Voraussetzung ist Docker mit Compose. PHP, Composer und Node werden **nicht**
-auf dem Host benötigt – alles läuft im Container.
 
 ```bash
 git clone https://github.com/r0b0tan/Smallgate.git
@@ -34,7 +49,7 @@ cd Smallgate
 
 cp .env.example .env
 
-# Container-Image bauen (uid/gid des Hosts, damit Dateirechte stimmen)
+# Build the image with the host uid/gid so file permissions line up
 docker compose build --build-arg UID=$(id -u) --build-arg GID=$(id -g) app
 
 ./sg composer install
@@ -42,242 +57,281 @@ docker compose build --build-arg UID=$(id -u) --build-arg GID=$(id -g) app
 ./sg up
 
 ./sg artisan migrate
-./sg artisan db:seed          # Demo-Daten, nur außerhalb der Produktion
+./sg artisan db:seed          # demo data, refuses to run in production
 
 ./sg npm install
 ./sg npm run build
 ```
 
-Danach erreichbar:
+Then:
 
-| Dienst | Adresse |
+| Service | Address |
 |---|---|
 | Portal | http://localhost:8080 |
-| Mailpit (E-Mails) | http://localhost:8025 |
+| Mailpit (outgoing mail) | http://localhost:8025 |
 | PostgreSQL | localhost:55432 |
 
-Für die Frontend-Entwicklung mit Hot Reload:
+For frontend work with hot reload:
 
 ```bash
 docker compose --profile dev up vite
 ```
 
-### Demo-Zugänge
+### Demo accounts
 
-Der Seeder legt folgende Konten an (Passwort aus `SEED_PASSWORD`, standardmäßig
-`passwort-nur-fuer-lokale-entwicklung`):
+The seeder creates a handful of fictional customers so the portal is not empty
+on first run. The password comes from `SEED_PASSWORD` and defaults to
+`passwort-nur-fuer-lokale-entwicklung`.
 
-| E-Mail | Rolle |
+| Email | Role |
 |---|---|
-| `admin@clickit-digital.test` | Administrator |
-| `marion@holzmann.test` | Kunde – Holzmann Bau GmbH |
-| `sabine@bergblick.test` | Kunde – Hotel Bergblick |
-| `joerg@altmann.test` | Kunde eines **deaktivierten** Kunden (kann sich nicht anmelden) |
+| `admin@example.test` | Administrator |
+| `marion@holzmann.test` | Customer — Holzmann Bau GmbH |
+| `sabine@bergblick.test` | Customer — Hotel Bergblick |
+| `joerg@altmann.test` | User of a **deactivated** customer (cannot sign in) |
 
-Der Seeder verweigert die Ausführung, wenn `APP_ENV=production` ist.
+The seeder refuses to run when `APP_ENV=production`. Adapt
+`database/seeders/DatabaseSeeder.php` to your own examples, or skip the seed
+step and create the first administrator by hand. There is no artisan command for
+it, and `role`, `is_active` and `customer_id` are not mass assignable on
+purpose, so assign them explicitly in `./sg artisan tinker`:
 
-## Das Helferskript `./sg`
-
-Dünner Wrapper um `docker compose`, damit alles mit der uid/gid des Hosts läuft:
-
-```bash
-./sg up                  # Stack starten
-./sg down                # Stack stoppen
-./sg artisan <befehl>    # Artisan
-./sg composer <befehl>   # Composer
-./sg test                # vollständige Testsuite
-./sg pint                # Code formatieren
-./sg npm <befehl>        # npm
-./sg shell               # Shell im App-Container
-./sg logs                # Logs folgen
+```php
+$user = new App\Models\User;
+$user->name = 'Admin';
+$user->email = 'you@example.com';
+$user->password = 'a-long-passphrase';   // hashed by the model cast
+$user->role = App\Enums\UserRole::Admin;
+$user->customer_id = null;               // an administrator never has one
+$user->is_active = true;
+$user->email_verified_at = now();
+$user->save();
 ```
 
-## Rollen
+Every further account is created through the invitation flow in the portal.
 
-**Administrator** – legt Kunden, Projekte und Vorschauen an und bearbeitet sie,
-lädt Kundenbenutzer ein, versendet Einladungen erneut, sperrt Konten, sieht
-alles.
+### Language
 
-**Kunde** – meldet sich an, ändert das eigene Passwort, sieht ausschließlich die
-eigenen Projekte und deren Vorschauen. Keinerlei Schreibrechte.
+The user interface, validation messages and legal pages are **German**. Code,
+comments and tests are English. Translating the UI means going through
+`resources/views` and `lang/` — there is no locale switcher, and the strings are
+not yet extracted into translation files.
 
-Es gibt **keine öffentliche Registrierung**. Konten entstehen ausschließlich
-durch eine Einladung eines Administrators.
+## The `./sg` helper
 
-## Sicherheit
+A thin wrapper around `docker compose` so everything runs with the host's
+uid/gid:
 
-Die getroffenen Entscheidungen im Überblick:
+```bash
+./sg up                  # start the stack
+./sg down                # stop the stack
+./sg artisan <command>   # artisan
+./sg composer <command>  # composer
+./sg test                # the full test suite
+./sg pint                # format code
+./sg npm <command>       # npm
+./sg shell               # shell in the app container
+./sg logs                # follow logs
+```
 
-**Passwörter** – Argon2id (OWASP-Parameter: 64 MiB, 4 Iterationen), ausschließlich
-über Laravels `Hash`-Fassade. Keine eigene Kryptografie, keine Verschlüsselung
-von Passwörtern.
+## Roles
 
-**Anmeldung** – Rate-Limiting pro Kombination aus E-Mail und IP (fünf Versuche je
-Minute). Das ist *ein* Zähler pro Paar, nicht je ein eigenes Limit pro E-Mail und
-pro IP: Angriffe auf ein Konto sperren kein anderes, verteiltes Raten über viele
-Quelladressen wird damit aber nicht verhindert. Die Session-ID wird nach dem
-Login neu erzeugt; es gibt eine einzige generische Fehlermeldung für falsches
-Passwort, unbekannte Adresse, gesperrtes Konto und deaktivierten Kunden. Auch
-„Passwort vergessen“ antwortet immer gleich, unabhängig davon, ob die Adresse
-existiert.
+**Administrator** — creates and edits customers, projects and previews, invites
+client users, resends invitations, blocks accounts, sees everything.
 
-**Host-Header und generierte Links** – Passwort-Reset- und Einladungsmails
-enthalten absolute URLs. Damit ein gefälschter `Host`-Header kein gültiges Token
-auf eine fremde Domain schicken kann, greifen zwei Schichten: Anfragen mit einem
-nicht konfigurierten `Host` werden abgewiesen (`TRUSTED_HOSTS`, außerhalb von
-`local`; Subdomains gelten *nicht* als vertrauenswürdig), und jede generierte URL
-wird fest an `APP_URL` gebunden – auch in Queue-Workern und Konsolenbefehlen, wo
-es gar keine Anfrage gibt. `X-Forwarded-*` wird nur von den in `TRUSTED_PROXIES`
-genannten Proxys akzeptiert; ohne Eintrag werden die Header ignoriert.
+**Customer** — signs in, changes their own password, sees only their own
+projects and previews. No write access of any kind.
 
-Der vorgeschaltete Webserver sollte unbekannte Hosts zusätzlich selbst abweisen
-(bei nginx ein `default_server` mit `return 444`). Die mitgelieferte
-nginx-Konfiguration ist eine Entwicklungskonfiguration und tut das bewusst nicht.
+There is **no public registration**. Accounts come into existence only through
+an administrator's invitation.
 
-**Sitzungen** – Datenbank-Treiber, `HttpOnly`, `SameSite=lax`, `Secure` in
-Produktion. Nach Passwortänderung und -Reset werden alle anderen Sitzungen
-gelöscht und Remember-Me-Tokens verworfen. Ein gesperrter Benutzer oder ein
-deaktivierter Kunde verliert den Zugriff bei der **nächsten Anfrage**, nicht
-erst beim nächsten Login.
+## Security
 
-**Autorisierung** – Policies ohne pauschales `Gate::before`; jede Fähigkeit wird
-einzeln formuliert, Standard ist Verweigern. Kundendaten werden über den Scope
-`Project::visibleTo()` eingegrenzt – eine fremde oder unbekannte ID liefert
-deshalb **404**, niemals 403, und ist damit von außen ununterscheidbar.
+The decisions, so you can judge them rather than trust them:
 
-**Mass Assignment** – `role`, `customer_id`, `is_active`, `project_id` und
-`provisioned_at` sind nirgends `$fillable`. Das Invitation-Modell ist vollständig
-`#[Guarded]`. Zusätzlich erzwingen PostgreSQL-CHECK-Constraints, dass ein
-Kundenbenutzer immer einen Kunden hat und ein Administrator nie einen.
+**Passwords** — Argon2id (OWASP parameters: 64 MiB, 4 iterations), exclusively
+through Laravel's `Hash` facade. No home-grown cryptography, no encryption of
+passwords.
 
-**Einladungen** – 256 Bit CSPRNG-Token, in der Datenbank nur als SHA-256-Hash.
-Zeitlich begrenzt, einmalig verwendbar, Wiederversand macht den alten Link sofort
-ungültig. Die Einlösung läuft in einer Transaktion mit `lockForUpdate`, sodass
-zwei gleichzeitige Einlösungen nicht beide ein Konto erzeugen.
+**Sign-in** — rate limiting per email+IP combination (five attempts per minute).
+That is *one* counter per pair, not a separate limit per email and per IP:
+attacks on one account do not lock another out, but distributed guessing across
+many source addresses is not prevented. The session id is regenerated after
+login, and there is a single generic error message for wrong password, unknown
+address, blocked account and deactivated customer. "Forgot password" answers
+identically whether or not the address exists.
 
-**IDs** – ULIDs als Primärschlüssel für alle öffentlich sichtbaren Ressourcen.
-Fortlaufende Ganzzahlen wären zähl- und aufzählbar.
+**Host header and generated links** — password-reset and invitation mails
+contain absolute URLs. So a forged `Host` header cannot send a valid token to a
+foreign domain, two layers apply: requests with an unconfigured `Host` are
+rejected (`TRUSTED_HOSTS`, outside `local`; subdomains are *not* trusted), and
+every generated URL is pinned to `APP_URL` — including in queue workers and
+console commands, where there is no request at all. `X-Forwarded-*` is honoured
+only from the proxies listed in `TRUSTED_PROXIES`; with none listed the headers
+are ignored.
 
-**Datenschutz** – nur technisch notwendige Cookies. Kein Tracking, keine
-Analytics, keine externen JavaScript-Dienste, keine CDNs. Schriftarten werden als
-npm-Pakete lokal gebündelt. Das Portal ist mit `noindex` von Suchmaschinen
-ausgeschlossen. Es werden keine Tokens, Secrets oder personenbezogenen Daten
-protokolliert.
+The web server in front should reject unknown hosts itself as well (in nginx, a
+`default_server` with `return 444`). The bundled nginx configuration is a
+development configuration and deliberately does not.
 
-**Vorschau-Ziele** – Pfade und Upstream-URLs stammen ausschließlich aus einer
-Allowlist in `config/previews.php`. Path Traversal wird lexikalisch aufgelöst;
-existierende Pfade werden zusätzlich per `realpath()` gegen Symlinks geprüft.
-Upstream-URLs müssen HTTPS sein und einen erlaubten Host ohne IP-Literal,
-Zugangsdaten oder abweichenden Port verwenden. Kunden sehen ein Ziel nie und
-können es nie beeinflussen.
+**Sessions** — database driver, `HttpOnly`, `SameSite=lax`, `Secure` in
+production. After a password change or reset, all other sessions are deleted and
+remember-me tokens discarded. A blocked user or a deactivated customer loses
+access on the **next request**, not at the next login.
 
-Diese Prüfungen sind eine Eingabevalidierung, keine vollständige SSRF-Abwehr:
-Hostnamen werden nicht aufgelöst, private oder Loopback-Adressen hinter einem
-erlaubten Namen nicht erkannt, Redirects und DNS-Rebinding nicht behandelt.
-Ebenso schützt `realpath()` nicht gegen Symlinks, die erst nach der Prüfung
-entstehen (TOCTOU), und nicht gegen noch nicht existierende Ziele. Solange nur
-der `NullPreviewProvisioner` existiert, wird keine Verbindung aufgebaut und
-keine Datei ausgeliefert – vor einer echten Auslieferung müssen beide Prüfungen
-am tatsächlichen I/O-Punkt wiederholt und vervollständigt werden.
+**Authorisation** — policies without a blanket `Gate::before`; every ability is
+spelled out separately, and the default is deny. Customer data is narrowed
+through the `Project::visibleTo()` scope, so a foreign or unknown id yields
+**404**, never 403, and is indistinguishable from the outside.
 
-## Vorschauen
+**Mass assignment** — `role`, `customer_id`, `is_active`, `project_id`,
+`provisioned_at` and a preview's `status` are `$fillable` nowhere. The
+invitation model is fully `#[Guarded]`. PostgreSQL CHECK constraints additionally
+enforce that a customer user always has a customer and an administrator never
+does.
 
-Für das MVP sind Vorschauen **nur ein geschützter Eintrag im Portal**. Es gibt
-noch keine Subdomain-Auslieferung und keinen Proxy.
+**Invitations** — 256-bit CSPRNG tokens, stored only as a SHA-256 hash. Time
+limited, single use; resending invalidates the previous link immediately.
+Redemption runs in a transaction with `lockForUpdate`, so two simultaneous
+redemptions cannot both create an account.
 
-Vorbereitet ist:
+**Ids** — ULIDs as primary keys for every publicly visible resource. Sequential
+integers would be countable and enumerable.
 
-- Ein Wildcard-DNS-Eintrag `*.preview.clickit-digital.de` genügt – Smallgate
-  erzeugt keine DNS-Einträge.
-- `previews.hostname` ist global eindeutig, sodass ein `Host`-Header später
-  genau einer Vorschau zugeordnet werden kann.
-- Das Interface `App\Contracts\PreviewProvisioner` markiert die Systemgrenze.
-- Die einzige Implementierung `NullPreviewProvisioner` verändert **keine**
-  Serverdateien und führt **keine** privilegierten Kommandos aus.
+**Privacy** — technically necessary cookies only. No tracking, no analytics, no
+external JavaScript, no CDNs. Fonts are bundled locally from npm packages. The
+portal is excluded from search engines with `noindex`. No tokens, secrets or
+personal data are written to the log.
 
-Die Architekturentscheidung für die echte Auslieferung ist bewusst noch offen –
-inklusive der Sicherheitsprobleme von Session-Cookies über mehrere Subdomains:
+**Preview targets** — paths and upstream URLs come exclusively from an allowlist
+in `config/previews.php`. Path traversal is resolved lexically; existing paths
+are additionally checked against symlinks with `realpath()`. Upstream URLs must
+be HTTPS and use an allow-listed host with no IP literal, no credentials and no
+unexpected port. Customers never see a target and can never influence one.
+
+These checks are input validation, not complete SSRF defence: hostnames are not
+resolved, private or loopback addresses behind an allowed name are not detected,
+and redirects and DNS rebinding are not handled. Likewise `realpath()` does not
+protect against symlinks created after the check (TOCTOU), nor against targets
+that do not exist yet. As long as only `NullPreviewProvisioner` exists, no
+connection is opened and no file is served — before real serving lands, both
+checks must be repeated and completed at the actual I/O point.
+
+## Previews
+
+In the MVP a preview is **only a protected entry in the portal**. There is no
+subdomain serving and no proxy yet.
+
+What is already prepared:
+
+- A single wildcard DNS record (`*.preview.example.com`, configured through
+  `PREVIEW_BASE_DOMAIN`) is enough — Smallgate never creates DNS records.
+- `previews.hostname` is globally unique, so a `Host` header can later be mapped
+  to exactly one preview.
+- The `App\Contracts\PreviewProvisioner` interface marks the system boundary.
+- The only implementation, `NullPreviewProvisioner`, changes **no** server files
+  and runs **no** privileged commands.
+
+The architecture decision for real serving is deliberately still open —
+including the security problems of session cookies across several subdomains:
 [docs/adr/0001-preview-subdomain-architecture.md](docs/adr/0001-preview-subdomain-architecture.md).
+
+An administrator creates a preview as a draft and releases it with
+**Bereitstellen**; the status is the result of that action, never a form field.
 
 ## Tests
 
 ```bash
-./sg npm run build   # einmalig nötig: die Views binden das Vite-Manifest ein
+./sg npm run build   # needed once: the views embed the Vite manifest
 ./sg test
 ```
 
-Die Tests laufen gegen eine echte PostgreSQL-Datenbank (`smallgate_test`, wird
-vom `db`-Container beim ersten Start automatisch angelegt) und **nicht** gegen
-SQLite – die CHECK-Constraints und Regex-Operatoren des Schemas gehören
-ausdrücklich mit zum Testumfang.
+Tests run against a real PostgreSQL database (`smallgate_test`, created
+automatically by the `db` container on first start) and **not** against SQLite —
+the schema's CHECK constraints and regex operators are explicitly part of what
+is being tested.
 
-Abgedeckt sind unter anderem: keine öffentliche Registrierung, Anlegen von
-Kunden, Einladungsablauf inklusive Einmalverwendung und Ablauf, Mandantentrennung,
-404 statt 403 bei fremden IDs, gesperrte Benutzer und deaktivierte Kunden,
-Login-Rate-Limiting, Sitzungsentzug bei Passwortänderung, Mass-Assignment-Schutz
-sowie Path-Traversal- und SSRF-Abwehr bei Vorschau-Zielen.
+Covered among other things: no public registration, creating customers, the
+invitation flow including single use and expiry, tenant isolation, 404 instead
+of 403 for foreign ids, blocked users and deactivated customers, login rate
+limiting, session revocation on password change, mass-assignment protection, and
+path-traversal and SSRF defence for preview targets.
 
-## Konfiguration
+## Configuration
 
-Alle sensiblen Werte kommen aus Umgebungsvariablen. `.env.example` enthält keine
-echten Secrets und ist durchgehend kommentiert.
+Every sensitive value comes from an environment variable. `.env.example`
+contains no real secrets and is commented throughout.
 
-Vor dem Produktivbetrieb zwingend setzen:
+Set these before running in production:
 
 ```dotenv
 APP_ENV=production
 APP_DEBUG=false
 APP_KEY=<php artisan key:generate>
-APP_URL=https://portal.example.de
+APP_URL=https://portal.example.com
 SESSION_SECURE_COOKIE=true
 LOG_LEVEL=info
 
-# Nur nötig, wenn das Portal unter weiteren Namen erreichbar ist.
+# Only needed if the portal is reachable under further names.
 TRUSTED_HOSTS=
-# Adressen oder CIDR-Bereiche des Reverse Proxy, der TLS terminiert.
+# Addresses or CIDR ranges of the reverse proxy that terminates TLS.
 TRUSTED_PROXIES=
 ```
 
-`APP_URL` ist nicht kosmetisch: Es ist die kanonische Basis für jeden
-generierten Link und gleichzeitig der erste vertrauenswürdige Host. Ohne
-`TRUSTED_PROXIES` sieht die Anwendung hinter einem TLS-terminierenden Proxy
-`http` statt `https`.
+`APP_URL` is not cosmetic: it is the canonical base for every generated link and
+at the same time the first trusted host. Without `TRUSTED_PROXIES`, an
+application behind a TLS-terminating proxy sees `http` instead of `https`.
 
-`SESSION_DOMAIN` bleibt leer. Das Session-Cookie darf niemals auf die
-Parent-Domain gesetzt werden – die Begründung steht in ADR 0001.
+`SESSION_DOMAIN` stays empty. The session cookie must never be set on the parent
+domain — the reasoning is in ADR 0001.
 
-Impressum und Datenschutzerklärung sind Platzhalterseiten und werden über
-`LEGAL_*` konfiguriert. Der endgültige Text ist vor dem Livegang rechtlich zu
-prüfen.
+Imprint and privacy policy are placeholder pages configured through `LEGAL_*`.
+They are written for German law (§ 5 DDG, GDPR); if you operate elsewhere,
+replace the wording in `resources/views/legal/`. Either way the final text needs
+legal review before you go live.
 
-## Projektstruktur
+## Project structure
 
 ```
 app/
-├── Contracts/          PreviewProvisioner – die einzige echte Systemgrenze
+├── Contracts/          PreviewProvisioner -- the only real system boundary
 ├── Enums/              UserRole, ProjectStatus, PreviewStatus, PreviewTargetType
 ├── Http/
 │   ├── Controllers/    Auth, Admin, Portal, Profile, Legal
 │   ├── Middleware/     EnsureUserIsAdmin, EnsureAccountIsActive
-│   └── Requests/       serverseitige Validierung
+│   └── Requests/       server-side validation
 ├── Models/             User, Customer, Project, Preview, Invitation
-├── Notifications/      Einladung, Passwort-Reset
-├── Policies/           explizit, ohne pauschales Gate::before
+├── Notifications/      invitation, password reset
+├── Policies/           explicit, without a blanket Gate::before
 ├── Rules/              PreviewHostname, AllowedPreviewTarget
 └── Services/
     ├── InvitationService.php
     └── Previews/       NullPreviewProvisioner, PreviewTargetGuard
-docker/                 PHP-Image, nginx, PostgreSQL-Init
-docs/adr/               Architekturentscheidungen
+docker/                 PHP image, nginx, PostgreSQL init
+docs/adr/               architecture decision records
 ```
 
-Keine Repository-Pattern über Eloquent. Keine Interfaces außer an der
-tatsächlichen Systemgrenze. Keine vorweggenommene Multi-Tenancy-Plattform.
+No repository pattern over Eloquent. No interfaces except at an actual system
+boundary. No anticipatory multi-tenancy platform.
 
-### Eine Anmerkung zur Kundenzuordnung
+### A note on customer assignment
 
-Ein Benutzer gehört im MVP zu genau einem Kunden – abgebildet als
-`users.customer_id`. Jede Sichtbarkeitsprüfung läuft über
-`User::accessibleCustomerIds()`. Eine spätere Mehrfachzuordnung erfordert damit
-eine Schemaänderung und die Anpassung **dieser einen Methode**, nicht das
-Umschreiben aller Abfragen.
+A user belongs to exactly one customer — modelled as `users.customer_id`. Every
+visibility check goes through `User::accessibleCustomerIds()`. Supporting
+multiple assignments later therefore takes a schema change and an edit to **that
+one method**, not a rewrite of every query.
+
+## Contributing
+
+Issues and pull requests are welcome. Two things to keep in mind:
+
+- Run `./sg pint && ./sg test` before you push.
+- The scope is the point. Features outside the MVP — a CRM, invoicing, file
+  storage, a chat — will be declined, however well implemented. `CLAUDE.md`
+  records the architecture and security rules the codebase is held to.
+
+## Licence
+
+MIT — see [LICENSE](LICENSE). Use it, change it, self-host it, commercially or
+not. It comes without warranty; you are responsible for the deployment you run
+and for the personal data your installation processes.

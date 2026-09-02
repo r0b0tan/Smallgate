@@ -7,7 +7,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 
 /**
  * A preview hostname must be a single label directly below the configured
- * preview base domain, e.g. "holzmann.preview.clickit-digital.de".
+ * preview base domain, e.g. "acme.preview.example.com".
  *
  * Pinning it to the base domain is what makes the single wildcard DNS record
  * sufficient, and it stops an administrator from accidentally claiming a

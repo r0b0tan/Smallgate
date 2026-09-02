@@ -7,14 +7,14 @@ return [
     | Preview Base Domain
     |--------------------------------------------------------------------------
     |
-    | A single wildcard DNS record (*.preview.clickit-digital.de) points at the
+    | A single wildcard DNS record (*.preview.example.com) points at the
     | preview server, so Smallgate never has to create DNS records itself.
     | Preview hostnames must be a direct label under this domain; the value is
     | enforced server side in App\Rules\PreviewHostname.
     |
     */
 
-    'base_domain' => env('PREVIEW_BASE_DOMAIN', 'preview.clickit-digital.de'),
+    'base_domain' => env('PREVIEW_BASE_DOMAIN', 'preview.example.com'),
 
     /*
     |--------------------------------------------------------------------------

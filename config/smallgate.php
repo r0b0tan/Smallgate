@@ -92,7 +92,7 @@ return [
     */
 
     'legal' => [
-        'company' => env('LEGAL_COMPANY', 'Clickit Digital'),
+        'company' => env('LEGAL_COMPANY', ''),
         'address' => env('LEGAL_ADDRESS', ''),
         'email' => env('LEGAL_EMAIL', ''),
         'phone' => env('LEGAL_PHONE', ''),

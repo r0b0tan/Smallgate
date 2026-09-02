@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('slug');
 
-            // The future subdomain, e.g. holzmann.preview.clickit-digital.de.
+            // The future subdomain, e.g. acme.preview.example.com.
             // Globally unique because a host header maps to exactly one preview.
             $table->string('hostname')->nullable()->unique();
 

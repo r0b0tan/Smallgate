@@ -34,7 +34,7 @@ class DatabaseSeeder extends Seeder
 
         $admin = new User;
         $admin->name = env('SEED_ADMIN_NAME', 'Admin');
-        $admin->email = env('SEED_ADMIN_EMAIL', 'admin@clickit-digital.test');
+        $admin->email = env('SEED_ADMIN_EMAIL', 'admin@example.test');
         $admin->password = $password;
         $admin->role = UserRole::Admin;
         $admin->customer_id = null;
@@ -159,9 +159,11 @@ class DatabaseSeeder extends Seeder
         $preview->fill([
             'name' => $name,
             'slug' => $slug,
-            'status' => $status,
             'target_type' => PreviewTargetType::StaticDirectory,
         ]);
+        // Not fillable: the status decides whether the customer is offered the
+        // preview, so it is assigned explicitly here just as the admin actions do.
+        $preview->status = $status;
 
         if ($subdomain !== null) {
             $roots = (array) config('previews.allowed_roots', []);

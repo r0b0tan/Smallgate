@@ -11,7 +11,7 @@
     <div class="mt-4 space-y-4 text-sm sg-muted">
         <section>
             <h2 class="font-medium text-white/80">Angaben gemäß § 5 DDG</h2>
-            <p class="mt-1 whitespace-pre-line">{{ $legal['company'] }}
+            <p class="mt-1 whitespace-pre-line">{{ $legal['company'] ?: '[Betreiber über LEGAL_COMPANY konfigurieren]' }}
 {{ $legal['address'] ?: '[Anschrift über LEGAL_ADDRESS konfigurieren]' }}</p>
         </section>
 

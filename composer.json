@@ -1,14 +1,15 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "clickit/smallgate",
+    "name": "smallgate/smallgate",
     "type": "project",
-    "description": "Smallgate - kleines, selbst gehostetes Kundenportal fuer Clickit Digital.",
+    "description": "Smallgate - a small, self-hosted client portal for projects and website previews.",
     "keywords": [
         "laravel",
         "portal",
-        "clickit"
+        "client-portal",
+        "self-hosted"
     ],
-    "license": "proprietary",
+    "license": "MIT",
     "require": {
         "php": "^8.4.1",
         "laravel/framework": "^13.17",
