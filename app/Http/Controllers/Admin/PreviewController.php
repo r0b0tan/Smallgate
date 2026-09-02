@@ -74,7 +74,10 @@ class PreviewController extends Controller
         $preview->fill($request->validated());
         $preview->save();
 
-        $message = $preview->status === PreviewStatus::Available
+        // Only claim there is something to re-provision when the save actually
+        // changed a column -- an unchanged save leaves updated_at alone, so the
+        // drift hint on the project page would not appear either.
+        $message = $preview->wasChanged() && $preview->status === PreviewStatus::Available
             ? 'Vorschau wurde gespeichert. Zum Übernehmen erneut bereitstellen.'
             : 'Vorschau wurde gespeichert.';
 

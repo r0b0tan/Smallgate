@@ -338,6 +338,33 @@ it('flags a preview that was edited after it went live', function () {
     expect($preview->fresh()->needsProvisioning())->toBeTrue();
 });
 
+it('only promises re-provisioning when something actually changed', function () {
+    $admin = $this->admin();
+    $project = Project::factory()->create();
+    $preview = Preview::factory()->for_project($project)->available()->create();
+
+    $unchanged = [
+        'name' => $preview->name,
+        'slug' => $preview->slug,
+        'hostname' => $preview->hostname,
+        'target_type' => 'static_directory',
+        'target' => $preview->target,
+    ];
+
+    // An unchanged save leaves updated_at alone, so there is nothing to
+    // re-provision and the message must not claim otherwise.
+    $this->actingAs($admin)
+        ->patch(route('admin.projects.previews.update', [$project, $preview]), $unchanged)
+        ->assertSessionHas('status', 'Vorschau wurde gespeichert.');
+
+    $this->actingAs($admin)
+        ->patch(route('admin.projects.previews.update', [$project, $preview]), [
+            ...$unchanged,
+            'name' => 'Anderer Name',
+        ])
+        ->assertSessionHas('status', 'Vorschau wurde gespeichert. Zum Übernehmen erneut bereitstellen.');
+});
+
 it('rejects a preview of another project through the nested route', function () {
     $admin = $this->admin();
     $project = Project::factory()->create();
