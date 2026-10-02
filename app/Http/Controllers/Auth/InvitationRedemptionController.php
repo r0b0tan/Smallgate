@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\ActivityAction;
 use App\Http\Controllers\Controller;
+use App\Models\Activity;
 use App\Services\InvitationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -58,6 +60,8 @@ class InvitationRedemptionController extends Controller
             // Lost the race against a concurrent redemption of the same token.
             return redirect()->route('invitations.show', ['token' => $token]);
         }
+
+        Activity::record(ActivityAction::InvitationAccepted, $user, actor: $user);
 
         Auth::guard('web')->login($user);
         $request->session()->regenerate();

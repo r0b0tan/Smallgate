@@ -7,7 +7,7 @@
 @section('title', $preview->name)
 
 @section('content')
-    <div class="mx-auto max-w-xl sg-card p-8 text-center sm:p-10">
+    <div class="max-w-xl sg-card p-8 text-center sm:p-10">
         <span class="mx-auto flex size-12 items-center justify-center rounded-md bg-amber-50 text-amber-700">
             <x-icon name="clock" class="size-6" />
         </span>

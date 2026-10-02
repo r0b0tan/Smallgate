@@ -23,6 +23,13 @@
                 sowie den Zeitpunkt der letzten Anmeldung. Diese Daten sind zur Bereitstellung des
                 Zugangs erforderlich.
             </p>
+            <p class="mt-2">
+                Zur Sicherheit und Nachvollziehbarkeit protokollieren wir, wann Sie sich anmelden, wann
+                eine Anmeldung an Ihrem Zugang fehlschlägt, wann Sie Passwort oder Profil ändern und
+                wann Sie auf einen Entwurf antworten. Das Protokoll enthält keine IP-Adressen und keine
+                Inhalte Ihrer Rückmeldungen. Einträge werden nach {{ config('smallgate.activity.retention_days') }}
+                Tagen automatisch gelöscht.
+            </p>
         </section>
 
         <section>

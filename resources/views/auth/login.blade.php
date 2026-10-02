@@ -8,12 +8,6 @@
         Bitte melden Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort an.
     </p>
 
-    @if (session('status'))
-        <div class="mt-5 sg-alert-status" role="status">
-            {{ session('status') }}
-        </div>
-    @endif
-
     {{-- One generic error for wrong password, unknown address and blocked
          account alike -- the form is not an account enumeration oracle. --}}
     @error('email')

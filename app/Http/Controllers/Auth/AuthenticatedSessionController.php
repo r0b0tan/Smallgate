@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\ActivityAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\Activity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -27,6 +29,8 @@ class AuthenticatedSessionController extends Controller
 
         $user = $request->user();
         $user->forceFill(['last_login_at' => Carbon::now()])->save();
+
+        Activity::record(ActivityAction::Login, actor: $user);
 
         return redirect()->intended(
             $user->isAdmin() ? route('admin.dashboard') : route('portal.dashboard')

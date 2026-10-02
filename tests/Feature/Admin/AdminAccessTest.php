@@ -118,6 +118,7 @@ dataset('admin endpoints', function () {
         'update project' => ['patch', fn () => route('admin.projects.update', Project::factory()->create())],
         'preview form' => ['get', fn () => route('admin.projects.previews.create', Project::factory()->create())],
         'create preview' => ['post', fn () => route('admin.projects.previews.store', Project::factory()->create())],
+        'activity log' => ['get', fn () => route('admin.activities.index')],
     ];
 });
 

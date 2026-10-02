@@ -113,8 +113,8 @@
     }
 
     .sg-badge {
-        @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs
-               font-semibold ring-1 ring-inset;
+        @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-xs
+               font-medium ring-1 ring-inset;
     }
 
     .sg-link {
@@ -137,8 +137,24 @@
         @apply border-line;
     }
 
-    .sg-alert-status {
-        @apply rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-900 ring-1 ring-inset ring-emerald-200;
+    /* Toasts (x-flash): slide in, stay for --toast-stay, then fade out and
+       collapse, so the ones above move down. Hovering pauses the countdown. */
+    .sg-toast {
+        @apply pointer-events-auto flex items-start gap-3 overflow-hidden rounded-lg bg-white px-4 py-3 text-sm
+               text-ink shadow-lift ring-1 ring-line;
+        max-height: 12rem;
+        animation:
+            sg-toast-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) var(--toast-delay, 0ms) both,
+            sg-toast-out 300ms ease-in calc(var(--toast-delay, 0ms) + var(--toast-stay, 6s)) forwards;
+    }
+
+    .sg-toast + .sg-toast {
+        @apply mt-3;
+    }
+
+    .sg-toast:hover,
+    .sg-toast:focus-within {
+        animation-play-state: paused;
     }
 
     .sg-alert-error {
@@ -164,5 +180,31 @@
 
     .sg-table tbody {
         @apply divide-y divide-line bg-white;
+    }
+}
+
+@keyframes sg-toast-in {
+    from {
+        opacity: 0;
+        transform: translateY(1.5rem);
+    }
+}
+
+@keyframes sg-toast-out {
+    to {
+        opacity: 0;
+        max-height: 0;
+        margin-top: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        visibility: hidden;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    @keyframes sg-toast-in {
+        from {
+            opacity: 0;
+        }
     }
 }

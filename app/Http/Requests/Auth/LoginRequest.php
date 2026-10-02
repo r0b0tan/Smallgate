@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Enums\ActivityAction;
+use App\Models\Activity;
+use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -49,6 +52,7 @@ class LoginRequest extends FormRequest
 
         if (! Auth::attempt($credentials, $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey(), $this->decaySeconds());
+            $this->recordFailure(User::query()->where('email', $credentials['email'])->first());
 
             throw ValidationException::withMessages([
                 'email' => __('auth.failed'),
@@ -58,7 +62,9 @@ class LoginRequest extends FormRequest
         // A user of a deactivated customer authenticates correctly but must not
         // reach the portal. Same generic message again.
         if (! Auth::user()?->canAccessPortal()) {
+            $user = Auth::user();
             Auth::guard('web')->logout();
+            $this->recordFailure($user);
 
             RateLimiter::hit($this->throttleKey(), $this->decaySeconds());
 
@@ -68,6 +74,18 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+    }
+
+    /**
+     * Failed sign-ins are logged against the account they aimed at. Attempts
+     * on addresses without an account are not logged at all: the typed address
+     * is never stored.
+     */
+    private function recordFailure(?User $user): void
+    {
+        if ($user !== null) {
+            Activity::record(ActivityAction::LoginFailed, $user);
+        }
     }
 
     /**

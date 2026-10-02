@@ -132,6 +132,8 @@ Route::middleware(['auth', 'admin'])
             ->name('projects.previews.thumbnail');
         Route::post('projekte/{project}/vorschauen/{preview}/vorschaubild', [Admin\PreviewController::class, 'regenerateThumbnail'])
             ->name('projects.previews.thumbnail.regenerate');
+
+        Route::get('protokoll', [Admin\ActivityController::class, 'index'])->name('activities.index');
     });
 
 /*

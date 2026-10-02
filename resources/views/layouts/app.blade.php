@@ -17,6 +17,7 @@
             ['label' => 'Dashboard', 'icon' => 'home', 'url' => route('admin.dashboard'), 'active' => 'admin.dashboard'],
             ['label' => 'Kunden', 'icon' => 'users', 'url' => route('admin.customers.index'), 'active' => 'admin.customers.*'],
             ['label' => 'Projekte', 'icon' => 'list', 'url' => route('admin.projects.index'), 'active' => 'admin.projects.*'],
+            ['label' => 'Protokoll', 'icon' => 'clock', 'url' => route('admin.activities.index'), 'active' => 'admin.activities.*'],
             ['label' => 'Ihre Zugangsdaten', 'icon' => 'user', 'url' => route('profile.edit'), 'active' => 'profile.*'],
         ]
         : [
@@ -106,9 +107,7 @@
             </div>
         </header>
 
-        <main class="mx-auto max-w-7xl px-4 pb-28 pt-8 sm:px-6 md:pb-12 lg:px-10 lg:pt-10">
-            <x-flash />
-
+        <main class="max-w-7xl px-4 pb-28 pt-6 sm:px-6 md:pb-12 lg:px-10 lg:pt-8">
             @hasSection('header')
                 <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
                     <div class="min-w-0">
@@ -158,5 +157,8 @@
                 @endforeach
             </div>
         </nav>
+
+        {{-- Above the bottom bar on phones. --}}
+        <x-flash class="bottom-24 md:bottom-6" />
     </div>
 @endsection

@@ -107,6 +107,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Activity Log
+    |--------------------------------------------------------------------------
+    |
+    | The administration's log of who did what. Entries only point at users
+    | and records -- no names, addresses, comments or IP addresses are copied
+    | into it -- and are deleted after this many days.
+    |
+    */
+
+    'activity' => [
+        'retention_days' => (int) env('ACTIVITY_RETENTION_DAYS', 90),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Legal Pages
     |--------------------------------------------------------------------------
     |

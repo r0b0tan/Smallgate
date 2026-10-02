@@ -29,5 +29,7 @@
                 <a class="hover:text-ink hover:underline" href="{{ route('legal.privacy') }}">Datenschutz</a>
             </div>
         </footer>
+
+        <x-flash class="bottom-6" />
     </div>
 @endsection

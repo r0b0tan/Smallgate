@@ -3,8 +3,14 @@
 namespace App\Providers;
 
 use App\Contracts\PreviewProvisioner;
+use App\Models\Customer;
+use App\Models\Invitation;
+use App\Models\Preview;
+use App\Models\Project;
+use App\Models\User;
 use App\Services\Previews\NullPreviewProvisioner;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
@@ -47,6 +53,16 @@ class AppServiceProvider extends ServiceProvider
         // someone adds a field to a form without thinking about $fillable,
         // which is exactly the mistake that turns into a privilege escalation.
         Model::preventSilentlyDiscardingAttributes(! $this->app->isProduction());
+
+        // Short, stable names for the activity log's subject column instead of
+        // class names, so a renamed class does not orphan old entries.
+        Relation::morphMap([
+            'customer' => Customer::class,
+            'invitation' => Invitation::class,
+            'preview' => Preview::class,
+            'project' => Project::class,
+            'user' => User::class,
+        ]);
     }
 
     private function configurePasswords(): void

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Contracts\PreviewProvisioner;
+use App\Enums\ActivityAction;
 use App\Enums\PreviewStatus;
 use App\Enums\PreviewTargetType;
 use App\Enums\ThumbnailStatus;
@@ -10,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StorePreviewRequest;
 use App\Http\Requests\Admin\UpdatePreviewRequest;
 use App\Jobs\GeneratePreviewThumbnail;
+use App\Models\Activity;
 use App\Models\Preview;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
@@ -54,6 +56,8 @@ class PreviewController extends Controller
         $preview->status = PreviewStatus::Draft;
         $preview->save();
 
+        Activity::record(ActivityAction::PreviewCreated, $preview);
+
         return redirect()->route('admin.projects.show', $project)
             ->with('status', 'Vorschau wurde als Entwurf angelegt. Zum Freigeben bereitstellen.');
     }
@@ -78,6 +82,10 @@ class PreviewController extends Controller
         $preview->fill($request->validated());
         $preview->save();
 
+        if ($preview->wasChanged()) {
+            Activity::record(ActivityAction::PreviewUpdated, $preview);
+        }
+
         // Only claim there is something to re-provision when the save actually
         // changed a column -- an unchanged save leaves updated_at alone, so the
         // drift hint on the project page would not appear either.
@@ -94,6 +102,9 @@ class PreviewController extends Controller
         $this->ensureBelongsToProject($project, $preview);
 
         $preview->delete();
+
+        // Recorded after the delete: the entry keeps the preview's name.
+        Activity::record(ActivityAction::PreviewDeleted, $preview);
 
         return redirect()->route('admin.projects.show', $project)
             ->with('status', 'Vorschau wurde gelöscht.');
@@ -131,8 +142,12 @@ class PreviewController extends Controller
         $preview->save();
 
         if (! $result->successful) {
+            Activity::record(ActivityAction::PreviewProvisionFailed, $preview);
+
             return redirect()->route('admin.projects.show', $project)->with('error', $result->message);
         }
+
+        Activity::record(ActivityAction::PreviewProvisioned, $preview, properties: ['version' => $preview->version]);
 
         GeneratePreviewThumbnail::for($preview);
 
@@ -203,6 +218,10 @@ class PreviewController extends Controller
 
         $preview->status = $result->status;
         $preview->save();
+
+        if ($result->successful) {
+            Activity::record(ActivityAction::PreviewDisabled, $preview);
+        }
 
         return redirect()->route('admin.projects.show', $project)
             ->with($result->successful ? 'status' : 'error', $result->message);

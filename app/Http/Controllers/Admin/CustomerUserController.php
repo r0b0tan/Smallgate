@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ActivityAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\InviteUserRequest;
+use App\Models\Activity;
 use App\Models\Customer;
 use App\Models\Invitation;
 use App\Models\User;
@@ -41,12 +43,14 @@ class CustomerUserController extends Controller
             return back()->with('error', 'Für einen deaktivierten Kunden können keine Einladungen versendet werden.');
         }
 
-        $this->invitations->invite(
+        ['invitation' => $invitation] = $this->invitations->invite(
             $customer,
             $request->validated('name'),
             $request->validated('email'),
             $request->user(),
         );
+
+        Activity::record(ActivityAction::InvitationSent, $invitation);
 
         return back()->with('status', 'Einladung wurde versendet.');
     }
@@ -60,6 +64,8 @@ class CustomerUserController extends Controller
         // A new token is issued, which immediately invalidates the old link.
         $this->invitations->resend($invitation);
 
+        Activity::record(ActivityAction::InvitationResent, $invitation);
+
         return back()->with('status', 'Einladung wurde erneut versendet.');
     }
 
@@ -70,6 +76,9 @@ class CustomerUserController extends Controller
         $this->authorize('revoke', $invitation);
 
         $invitation->delete();
+
+        // The invitation is gone, so the entry points at the customer instead.
+        Activity::record(ActivityAction::InvitationRevoked, $customer);
 
         return back()->with('status', 'Einladung wurde zurückgezogen.');
     }
@@ -85,6 +94,8 @@ class CustomerUserController extends Controller
         $this->authorize('block', $user);
 
         $user->forceFill(['is_active' => ! $user->is_active])->save();
+
+        Activity::record($user->is_active ? ActivityAction::UserUnblocked : ActivityAction::UserBlocked, $user);
 
         return back()->with('status', $user->is_active
             ? 'Zugang wurde entsperrt.'

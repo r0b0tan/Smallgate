@@ -21,8 +21,9 @@ ansehen** button and two answers — **Passt so** or **Änderung wünschen**, wi
 optional note — and beside it the last three answers. The speech bubble in the
 navigation opens **Nachrichten**, the paginated archive of every answer given;
 it is not a chat, replies still come by email (to `CONTACT_EMAIL`). The
-administrator sees the answers on the project page and the dashboard. There is
-no public sign-up: accounts exist only because somebody was invited.
+administrator sees the answers on the project page and the dashboard, and
+under **Protokoll** a log of who did what. There is no public sign-up: accounts
+exist only because somebody was invited.
 
 ## Stack
 
@@ -91,15 +92,25 @@ docker compose --profile dev up vite
 ### Demo accounts
 
 The seeder creates a handful of fictional customers so the portal is not empty
-on first run. The password comes from `SEED_PASSWORD` and defaults to
-`passwort-nur-fuer-lokale-entwicklung`.
+on first run. All demo accounts share one password, taken from `SEED_PASSWORD`:
 
-| Email | Role |
-|---|---|
-| `admin@example.test` | Administrator |
-| `marion@holzmann.test` | Customer — Holzmann Bau GmbH |
-| `sabine@bergblick.test` | Customer — Hotel Bergblick |
-| `joerg@altmann.test` | User of a **deactivated** customer (cannot sign in) |
+```
+passwort-nur-fuer-lokale-entwicklung
+```
+
+| Email | Name | Role | Good for |
+|---|---|---|---|
+| `admin@example.test` ¹ | Admin ¹ | Administrator | Everything under `/admin` |
+| `marion@holzmann.test` | Marion Holzmann | Customer — Holzmann Bau GmbH | Two projects, an available preview and a draft |
+| `peter@holzmann.test` | Peter Holzmann | Customer — Holzmann Bau GmbH | Second user of the same customer, sees the same projects |
+| `sabine@bergblick.test` | Sabine Wirth | Customer — Hotel Bergblick | Second customer, sees none of Holzmann's projects |
+| `joerg@altmann.test` | Jörg Altmann | User of a **deactivated** customer | Sign-in is refused |
+
+¹ From `SEED_ADMIN_EMAIL` and `SEED_ADMIN_NAME`; shown are the defaults from
+`.env.example`.
+
+The `.test` addresses exist nowhere. Invitations and password resets sent to
+them land in Mailpit (http://localhost:8025).
 
 The seeder refuses to run when `APP_ENV=production`. Adapt
 `database/seeders/DatabaseSeeder.php` to your own examples, or skip the seed
@@ -213,7 +224,17 @@ integers would be countable and enumerable.
 **Privacy** — technically necessary cookies only. No tracking, no analytics, no
 external JavaScript, no CDNs. Fonts are bundled locally from npm packages. The
 portal is excluded from search engines with `noindex`. No tokens, secrets or
-personal data are written to the log.
+personal data are written to the application log.
+
+**Activity log** — the administration's **Protokoll** records sign-ins (failed
+ones too), password and profile changes, invitations, blocking, changes to
+customers, projects and previews, and the customers' answers. An entry only
+points at the user and the record concerned. It never copies a name, an email
+address, a comment or an IP address; a failed sign-in on an address without an
+account is not recorded at all. Entries are deleted after
+`ACTIVITY_RETENTION_DAYS` (default 90) with the next recorded action, so no
+scheduler is needed. New actions are cases of `App\Enums\ActivityAction` plus a migration
+that widens the `activities_action_check` constraint.
 
 **Preview targets** — paths and upstream URLs come exclusively from an allowlist
 in `config/previews.php`. Path traversal is resolved lexically; existing paths

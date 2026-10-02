@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ActivityAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreCustomerRequest;
 use App\Http\Requests\Admin\UpdateCustomerRequest;
+use App\Models\Activity;
 use App\Models\Customer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -40,6 +42,8 @@ class CustomerController extends Controller
 
         $customer = Customer::create($request->validated());
 
+        Activity::record(ActivityAction::CustomerCreated, $customer);
+
         return redirect()->route('admin.customers.show', $customer)
             ->with('status', 'Kunde wurde angelegt.');
     }
@@ -67,6 +71,12 @@ class CustomerController extends Controller
         $this->authorize('update', $customer);
 
         $customer->update($request->validated());
+
+        if ($customer->wasChanged('is_active')) {
+            Activity::record($customer->is_active ? ActivityAction::CustomerActivated : ActivityAction::CustomerDeactivated, $customer);
+        } elseif ($customer->wasChanged()) {
+            Activity::record(ActivityAction::CustomerUpdated, $customer);
+        }
 
         return redirect()->route('admin.customers.show', $customer)
             ->with('status', 'Kunde wurde gespeichert.');

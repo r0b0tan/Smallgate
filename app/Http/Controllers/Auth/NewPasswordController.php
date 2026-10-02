@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\ActivityAction;
 use App\Http\Controllers\Concerns\RevokesSessions;
 use App\Http\Controllers\Controller;
+use App\Models\Activity;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
@@ -48,6 +50,8 @@ class NewPasswordController extends Controller
                 // remember-me cookie of this account must die, including the
                 // attacker's. revokeSessions() clears the remember token too.
                 $this->revokeSessions($user);
+
+                Activity::record(ActivityAction::PasswordReset, actor: $user);
 
                 event(new PasswordReset($user));
             }

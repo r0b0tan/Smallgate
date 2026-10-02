@@ -27,6 +27,8 @@
         'file' => '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/>',
         'check-circle' => '<circle cx="12" cy="12" r="10" fill="currentColor" stroke="none"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2"/>',
         'edit-circle' => '<circle cx="12" cy="12" r="10" fill="currentColor" stroke="none"/><path d="M8 16h2.2l5.6-5.6-2.2-2.2L8 13.8V16z" stroke="#fff" stroke-width="1.6"/>',
+        'info-circle' => '<circle cx="12" cy="12" r="10" fill="currentColor" stroke="none"/><path d="M12 11v5.5" stroke="#fff" stroke-width="2.2"/><circle cx="12" cy="7.75" r="1.35" fill="#fff" stroke="none"/>',
+        'alert-circle' => '<circle cx="12" cy="12" r="10" fill="currentColor" stroke="none"/><path d="M12 7v6" stroke="#fff" stroke-width="2.2"/><circle cx="12" cy="16.5" r="1.35" fill="#fff" stroke="none"/>',
         default => '',
     };
 @endphp

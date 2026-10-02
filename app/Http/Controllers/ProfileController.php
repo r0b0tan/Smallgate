@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ActivityAction;
 use App\Http\Controllers\Concerns\RevokesSessions;
+use App\Models\Activity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -48,6 +50,10 @@ class ProfileController extends Controller
 
         $user->save();
 
+        if ($user->wasChanged()) {
+            Activity::record(ActivityAction::ProfileUpdated, actor: $user);
+        }
+
         return back()->with('status', 'Ihr Profil wurde gespeichert.');
     }
 
@@ -69,6 +75,8 @@ class ProfileController extends Controller
         // Every other session of this account is revoked; the current one stays
         // signed in and is re-bound to the new hash.
         $this->revokeSessions($user, $request->session()->getId());
+
+        Activity::record(ActivityAction::PasswordChanged, actor: $user);
 
         return back()->with('status', 'Ihr Passwort wurde geändert. Andere Sitzungen wurden abgemeldet.');
     }

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ActivityAction;
 use App\Enums\ProjectStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreProjectRequest;
 use App\Http\Requests\Admin\UpdateProjectRequest;
+use App\Models\Activity;
 use App\Models\Customer;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
@@ -66,6 +68,8 @@ class ProjectController extends Controller
         $project->customer_id = $validated['customer_id'];
         $project->save();
 
+        Activity::record(ActivityAction::ProjectCreated, $project);
+
         return redirect()->route('admin.projects.show', $project)
             ->with('status', 'Projekt wurde angelegt.');
     }
@@ -103,6 +107,10 @@ class ProjectController extends Controller
         $project->fill(Arr::except($validated, ['customer_id']));
         $project->customer_id = $validated['customer_id'];
         $project->save();
+
+        if ($project->wasChanged()) {
+            Activity::record(ActivityAction::ProjectUpdated, $project);
+        }
 
         return redirect()->route('admin.projects.show', $project)
             ->with('status', 'Projekt wurde gespeichert.');

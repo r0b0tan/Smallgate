@@ -8,12 +8,6 @@
         Wir senden Ihnen einen Link, mit dem Sie ein neues Passwort vergeben können.
     </p>
 
-    @if (session('status'))
-        <div class="mt-5 sg-alert-status" role="status">
-            {{ session('status') }}
-        </div>
-    @endif
-
     <div class="mt-5"><x-errors /></div>
 
     <form method="POST" action="{{ route('password.email') }}" class="space-y-5">

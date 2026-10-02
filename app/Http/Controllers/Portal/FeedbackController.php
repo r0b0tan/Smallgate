@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Portal;
 
+use App\Enums\ActivityAction;
 use App\Enums\FeedbackDecision;
 use App\Http\Controllers\Concerns\ResolvesPortalPreviews;
 use App\Http\Controllers\Controller;
+use App\Models\Activity;
 use App\Models\Preview;
 use App\Models\PreviewFeedback;
 use Illuminate\Http\RedirectResponse;
@@ -92,6 +94,13 @@ class FeedbackController extends Controller
         $feedback->user_id = $request->user()->id;
         $feedback->preview_version = $previewModel->version;
         $feedback->save();
+
+        // Only the decision -- the comment stays in the feedback itself.
+        Activity::record(
+            $decision === FeedbackDecision::Approved ? ActivityAction::FeedbackApproved : ActivityAction::FeedbackChangesRequested,
+            $previewModel,
+            properties: ['version' => $previewModel->version],
+        );
 
         // The thanks is shown on the card itself, where the buttons were --
         // not in a banner the customer has to connect to the right draft.
