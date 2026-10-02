@@ -104,3 +104,24 @@ it('rejects every directory when no root is configured', function () {
 
     expect($this->guard->isAllowed(PreviewTargetType::StaticDirectory, '/srv/previews'))->toBeFalse();
 });
+
+/* ------------------------------------------------------- switched-off types */
+
+it('rejects an otherwise valid target whose type is switched off', function (PreviewTargetType $type, string $target, string $enabled) {
+    expect($this->guard->isAllowed($type, $target))->toBeTrue();
+
+    config(['previews.target_types' => [$enabled]]);
+
+    expect($this->guard->rejectionReason($type, $target))
+        ->toBe('Dieser Zieltyp ist auf diesem Server abgeschaltet.');
+})->with([
+    'static directory' => [PreviewTargetType::StaticDirectory, '/srv/previews/holzmann', 'upstream_url'],
+    'upstream url' => [PreviewTargetType::UpstreamUrl, 'https://staging.clickit-digital.test/holzmann', 'static_directory'],
+]);
+
+it('rejects every type when none is switched on', function (PreviewTargetType $type) {
+    config(['previews.target_types' => []]);
+
+    expect($this->guard->isAllowed($type, '/srv/previews/holzmann'))->toBeFalse()
+        ->and($this->guard->isAllowed($type, 'https://staging.clickit-digital.test/holzmann'))->toBeFalse();
+})->with(PreviewTargetType::cases());

@@ -19,6 +19,10 @@ x-app: &app
   environment:
     APP_ENV: production
     APP_DEBUG: "false"
+    # Static-directory previews need subdomain serving that does not exist yet
+    # (ADR 0001), so production offers upstream URLs only unless .env says
+    # otherwise.
+    PREVIEW_TARGET_TYPES: ${PREVIEW_TARGET_TYPES:-upstream_url}
   volumes:
     - storage:/var/www/html/storage
   networks:

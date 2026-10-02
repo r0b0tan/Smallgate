@@ -13,7 +13,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'slug', 'contact_email', 'is_active'])]
+/**
+ * `is_active` is deliberately not fillable: deactivating a customer locks out
+ * all of its users, so it is only ever set explicitly by administrator code.
+ */
+#[Fillable(['name', 'slug', 'contact_email'])]
 #[UsePolicy(CustomerPolicy::class)]
 class Customer extends Model
 {

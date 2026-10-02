@@ -31,16 +31,21 @@ class CustomerController extends Controller
     {
         $this->authorize('create', Customer::class);
 
-        return view('admin.customers.create', [
-            'customer' => new Customer(['is_active' => true]),
-        ]);
+        $customer = new Customer;
+        $customer->is_active = true;
+
+        return view('admin.customers.create', ['customer' => $customer]);
     }
 
     public function store(StoreCustomerRequest $request): RedirectResponse
     {
         $this->authorize('create', Customer::class);
 
-        $customer = Customer::create($request->validated());
+        $customer = new Customer;
+        $customer->fill($request->safe()->except('is_active'));
+        // Not fillable: decides whether the customer's users can sign in.
+        $customer->is_active = $request->boolean('is_active');
+        $customer->save();
 
         Activity::record(ActivityAction::CustomerCreated, $customer);
 
@@ -70,7 +75,9 @@ class CustomerController extends Controller
     {
         $this->authorize('update', $customer);
 
-        $customer->update($request->validated());
+        $customer->fill($request->safe()->except('is_active'));
+        $customer->is_active = $request->boolean('is_active');
+        $customer->save();
 
         if ($customer->wasChanged('is_active')) {
             Activity::record($customer->is_active ? ActivityAction::CustomerActivated : ActivityAction::CustomerDeactivated, $customer);

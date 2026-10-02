@@ -53,12 +53,7 @@ class DatabaseSeeder extends Seeder
 
     private function seedHolzmann(string $password): void
     {
-        $customer = Customer::create([
-            'name' => 'Holzmann Bau GmbH',
-            'slug' => 'holzmann',
-            'contact_email' => 'kontakt@holzmann.test',
-            'is_active' => true,
-        ]);
+        $customer = $this->customer('Holzmann Bau GmbH', 'holzmann', 'kontakt@holzmann.test', true);
 
         $this->customerUser($customer, 'Marion Holzmann', 'marion@holzmann.test', $password);
         $this->customerUser($customer, 'Peter Holzmann', 'peter@holzmann.test', $password);
@@ -77,12 +72,7 @@ class DatabaseSeeder extends Seeder
 
     private function seedBergblick(string $password): void
     {
-        $customer = Customer::create([
-            'name' => 'Hotel Bergblick',
-            'slug' => 'bergblick',
-            'contact_email' => 'info@bergblick.test',
-            'is_active' => true,
-        ]);
+        $customer = $this->customer('Hotel Bergblick', 'bergblick', 'info@bergblick.test', true);
 
         $this->customerUser($customer, 'Sabine Wirth', 'sabine@bergblick.test', $password);
 
@@ -101,12 +91,7 @@ class DatabaseSeeder extends Seeder
      */
     private function seedInactiveCustomer(string $password): void
     {
-        $customer = Customer::create([
-            'name' => 'Altmann Immobilien (Archiv)',
-            'slug' => 'altmann',
-            'contact_email' => 'archiv@altmann.test',
-            'is_active' => false,
-        ]);
+        $customer = $this->customer('Altmann Immobilien (Archiv)', 'altmann', 'archiv@altmann.test', false);
 
         $this->customerUser($customer, 'Jörg Altmann', 'joerg@altmann.test', $password);
 
@@ -127,6 +112,21 @@ class DatabaseSeeder extends Seeder
         $user->save();
 
         return $user;
+    }
+
+    private function customer(string $name, string $slug, string $contactEmail, bool $active): Customer
+    {
+        $customer = new Customer;
+        $customer->fill([
+            'name' => $name,
+            'slug' => $slug,
+            'contact_email' => $contactEmail,
+        ]);
+        // Not fillable: whether the customer's users may sign in at all.
+        $customer->is_active = $active;
+        $customer->save();
+
+        return $customer;
     }
 
     private function project(

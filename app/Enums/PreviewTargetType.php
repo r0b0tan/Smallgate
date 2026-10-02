@@ -32,11 +32,29 @@ enum PreviewTargetType: string
     }
 
     /**
+     * Switched on in config('previews.target_types') for this installation.
+     */
+    public function isEnabled(): bool
+    {
+        return in_array($this->value, (array) config('previews.target_types', []), true);
+    }
+
+    /**
+     * @return list<self>
+     */
+    public static function enabled(): array
+    {
+        return array_values(array_filter(self::cases(), fn (self $case) => $case->isEnabled()));
+    }
+
+    /**
+     * The choices for the admin form -- enabled types only.
+     *
      * @return array<string, string>
      */
     public static function options(): array
     {
-        return collect(self::cases())
+        return collect(self::enabled())
             ->mapWithKeys(fn (self $case) => [$case->value => $case->label()])
             ->all();
     }

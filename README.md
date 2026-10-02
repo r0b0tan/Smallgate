@@ -114,21 +114,16 @@ them land in Mailpit (http://localhost:8025).
 
 The seeder refuses to run when `APP_ENV=production`. Adapt
 `database/seeders/DatabaseSeeder.php` to your own examples, or skip the seed
-step and create the first administrator by hand. There is no artisan command for
-it, and `role`, `is_active` and `customer_id` are not mass assignable on
-purpose, so assign them explicitly in `./sg artisan tinker`:
+step and create the first administrator yourself:
 
-```php
-$user = new App\Models\User;
-$user->name = 'Admin';
-$user->email = 'you@example.com';
-$user->password = 'a-long-passphrase';   // hashed by the model cast
-$user->role = App\Enums\UserRole::Admin;
-$user->customer_id = null;               // an administrator never has one
-$user->is_active = true;
-$user->email_verified_at = now();
-$user->save();
+```bash
+./sg artisan admin:create
 ```
+
+It asks for name, address and password; the password only through a hidden
+prompt, never as an argument, so it ends up neither in the shell history nor in
+the process list. The command therefore runs interactively only. It creates
+administrators and nothing else.
 
 Every further account is created through the invitation flow in the portal.
 
@@ -485,12 +480,11 @@ machine, set `DOCKER_SUBNET` to a free range and use the same value in
 `TRUSTED_PROXIES`. This is safe because the web port listens on loopback only
 (`WEB_BIND`) — nothing but the local proxy can reach it.
 
-Start the stack and create the first administrator (the snippet from
-[Demo accounts](#demo-accounts)):
+Start the stack and create the first administrator:
 
 ```bash
 docker compose -f compose.prod.yaml up -d --build
-docker compose -f compose.prod.yaml exec app php artisan tinker
+docker compose -f compose.prod.yaml exec app php artisan admin:create
 ```
 
 ### Updates
@@ -504,14 +498,45 @@ docker compose -f compose.prod.yaml up -d --build
 Configuration is cached on every container start, so a change to `.env` needs
 `docker compose -f compose.prod.yaml up -d --force-recreate`.
 
-### Data
+### Backup and restore
 
 All state lives in two volumes: `db-data` (PostgreSQL) and `storage`
 (thumbnails, static preview directories under `storage/app/previews`, logs if
-not sent to stderr). Back up both.
+not sent to stderr).
+
+```bash
+scripts/backup.sh                 # into ./backups
+scripts/backup.sh /srv/backups    # or anywhere else
+```
+
+Each run writes a database dump (`pg_dump` custom format) and an archive of
+`storage/app`, both readable by their owner only — they contain personal data.
+The stack keeps running meanwhile. Run it from cron, copy the files off the
+machine and delete old ones yourself; the script does neither. Encrypt them
+wherever they leave the server.
+
+Restore into a running stack — a fresh one, or the damaged one:
+
+```bash
+docker compose -f compose.prod.yaml stop app worker
+docker compose -f compose.prod.yaml exec -T db \
+    sh -c 'pg_restore --clean --if-exists --no-owner --username="$POSTGRES_USER" --dbname="$POSTGRES_DB"' \
+    < backups/smallgate-<time>-db.dump
+docker compose -f compose.prod.yaml run --rm --no-deps -T app \
+    sh -c 'rm -rf storage/app/* && tar -xzf - -C storage' \
+    < backups/smallgate-<time>-storage.tar.gz
+docker compose -f compose.prod.yaml up -d
+```
+
+Test a restore once before you rely on it.
+
+### Previews in production
 
 Static-directory previews are not served in production yet — that is the open
-decision in ADR 0001. Until then, use upstream-URL previews.
+decision in ADR 0001. `compose.prod.yaml` therefore sets
+`PREVIEW_TARGET_TYPES=upstream_url` unless `.env` says otherwise: the admin
+form offers upstream URLs only, and an existing static preview is neither
+provisioned, screenshotted nor linked to.
 
 ## Project structure
 
@@ -532,7 +557,7 @@ app/
     ├── InvitationService.php
     └── Previews/       NullPreviewProvisioner, PreviewTargetGuard, PreviewScreenshotter
 docker/                 PHP image (dev and prod stages), nginx, PostgreSQL init
-scripts/                preview-screenshot.mjs (Playwright, run by the worker)
+scripts/                preview-screenshot.mjs (Playwright, run by the worker), backup.sh
 docs/adr/               architecture decision records
 ```
 

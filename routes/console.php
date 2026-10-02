@@ -2,10 +2,15 @@
 
 use App\Enums\PreviewStatus;
 use App\Enums\ThumbnailStatus;
+use App\Enums\UserRole;
 use App\Jobs\GeneratePreviewThumbnail;
 use App\Models\Preview;
+use App\Models\User;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -45,3 +50,54 @@ Artisan::command('previews:thumbnails {--all : Auch vorhandene Vorschaubilder ne
 
     return 0;
 })->purpose('Vorschaubilder für verfügbare Vorschauen erzeugen');
+
+/*
+ * Create an administrator -- the first one after a fresh deployment, or any
+ * further one. Customer users are never created here; they come only through
+ * an invitation. The password is asked for hidden and never accepted as an
+ * argument or option: the process list and the shell history are readable.
+ */
+Artisan::command('admin:create', function () {
+    if (! $this->input->isInteractive()) {
+        $this->error('Dieser Befehl fragt das Passwort verdeckt ab und läuft nur interaktiv.');
+
+        return 1;
+    }
+
+    $input = [
+        'name' => trim((string) $this->ask('Name')),
+        'email' => mb_strtolower(trim((string) $this->ask('E-Mail-Adresse'))),
+        'password' => (string) $this->secret('Passwort (mindestens 12 Zeichen)'),
+        'password_confirmation' => (string) $this->secret('Passwort wiederholen'),
+    ];
+
+    $validator = Validator::make($input, [
+        'name' => ['required', 'string', 'max:255'],
+        'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')],
+        'password' => ['required', 'confirmed', Password::defaults()],
+    ]);
+
+    if ($validator->fails()) {
+        foreach ($validator->errors()->all() as $message) {
+            $this->error($message);
+        }
+
+        return 1;
+    }
+
+    // Not mass assignable on purpose: role, customer and active flag are set
+    // explicitly, as in every other administrator-only code path.
+    $user = new User;
+    $user->name = $input['name'];
+    $user->email = $input['email'];
+    $user->password = $input['password']; // hashed by the model cast
+    $user->role = UserRole::Admin;
+    $user->customer_id = null;
+    $user->is_active = true;
+    $user->email_verified_at = now();
+    $user->save();
+
+    $this->info("Administrator {$user->email} angelegt.");
+
+    return 0;
+})->purpose('Administrator anlegen');

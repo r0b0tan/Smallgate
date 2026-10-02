@@ -13,6 +13,9 @@ use App\Enums\PreviewTargetType;
  * operator has already allow-listed in config/previews.php, and customers can
  * never influence it at all.
  *
+ * A type the operator has switched off (config('previews.target_types')) is
+ * rejected before anything else.
+ *
  * Two attack classes are handled here:
  *
  *  - Path traversal. A "static_directory" target is normalised lexically (so
@@ -34,6 +37,10 @@ class PreviewTargetGuard
     {
         if ($type === null) {
             return 'Es wurde kein Zieltyp angegeben.';
+        }
+
+        if (! $type->isEnabled()) {
+            return 'Dieser Zieltyp ist auf diesem Server abgeschaltet.';
         }
 
         if ($target === null || trim($target) === '') {

@@ -37,7 +37,7 @@ class PreviewController extends Controller
         return view('admin.previews.create', [
             'project' => $project,
             'preview' => new Preview([
-                'target_type' => PreviewTargetType::StaticDirectory->value,
+                'target_type' => (PreviewTargetType::enabled()[0] ?? null)?->value,
             ]),
             'targetTypes' => PreviewTargetType::options(),
         ]);

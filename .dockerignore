@@ -52,6 +52,7 @@ bootstrap/cache
 **/*.log
 
 # Datenbank-Dumps und Backups
+backups
 **/*.sql
 **/*.sql.gz
 **/*.dump

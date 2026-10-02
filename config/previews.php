@@ -46,9 +46,17 @@ return [
     | choose or influence either value -- only administrators can, and even
     | their input is validated against the allowlists below.
     |
+    | Only the types listed here can be chosen, provisioned, screenshotted or
+    | opened; PreviewTargetGuard rejects every other one. compose.prod.yaml
+    | narrows this to "upstream_url": a static directory needs the subdomain
+    | serving that ADR 0001 has not decided yet, so its link would lead nowhere.
+    |
     */
 
-    'target_types' => ['static_directory', 'upstream_url'],
+    'target_types' => array_values(array_filter(array_map(
+        'trim',
+        explode(',', (string) (env('PREVIEW_TARGET_TYPES') ?: 'static_directory,upstream_url'))
+    ))),
 
     /*
     | Absolute directory roots a "static_directory" target may live under.

@@ -109,6 +109,11 @@ class Preview extends Model
      */
     public function openUrl(): ?string
     {
+        // A switched-off type has nothing behind its address.
+        if ($this->target_type?->isEnabled() !== true) {
+            return null;
+        }
+
         return $this->target_type === PreviewTargetType::UpstreamUrl
             ? $this->upstreamUrl()
             : $this->hostUrl();

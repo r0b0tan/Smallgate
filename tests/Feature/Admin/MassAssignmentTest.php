@@ -15,6 +15,7 @@ use App\Models\Invitation;
 use App\Models\Preview;
 use App\Models\Project;
 use App\Models\User;
+use Illuminate\Database\Eloquent\MassAssignmentException;
 use Illuminate\Database\QueryException;
 
 /* -------------------------------------------------- the model level itself */
@@ -33,6 +34,24 @@ it('does not allow filling role, customer_id or is_active on a user', function (
 
     expect($user->isFillable('name'))->toBeTrue()
         ->and($user->isFillable('email'))->toBeTrue();
+});
+
+it('does not allow filling is_active on a customer', function () {
+    expect((new Customer)->isFillable('is_active'))->toBeFalse();
+
+    // Outside production the attempt is loud rather than silently dropped.
+    expect(fn () => new Customer(['name' => 'Holzmann', 'is_active' => false]))
+        ->toThrow(MassAssignmentException::class);
+});
+
+it('still lets an administrator create a deactivated customer explicitly', function () {
+    $this->actingAs($this->admin())->post(route('admin.customers.store'), [
+        'name' => 'Altmann Immobilien',
+        'slug' => 'altmann',
+        'is_active' => '0',
+    ])->assertSessionHasNoErrors();
+
+    expect(Customer::sole()->is_active)->toBeFalse();
 });
 
 it('does not allow filling customer_id on a project or project_id on a preview', function () {

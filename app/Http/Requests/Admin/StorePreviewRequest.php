@@ -61,7 +61,7 @@ class StorePreviewRequest extends FormRequest
                 new PreviewHostname,
                 Rule::unique('previews', 'hostname')->ignore($this->route('preview')),
             ],
-            'target_type' => ['required', Rule::enum(PreviewTargetType::class)],
+            'target_type' => ['required', Rule::enum(PreviewTargetType::class)->only(PreviewTargetType::enabled())],
             'target' => [
                 $optional,
                 'string', 'max:2048',
