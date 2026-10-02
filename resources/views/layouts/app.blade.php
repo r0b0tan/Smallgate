@@ -67,7 +67,7 @@
             </form>
         </aside>
 
-        <header class="sticky top-0 z-20 border-b border-line bg-white/90 backdrop-blur-md">
+        <header class="sticky top-0 z-20 border-b border-line bg-paper/90 backdrop-blur-md">
             <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
                 <a href="{{ route('home') }}" aria-label="{{ config('app.name') }} – zur Startseite">
                     {{-- The rail carries the mark on wider screens. --}}
@@ -77,7 +77,7 @@
 
                 <details class="relative" data-menu>
                     <summary class="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-full py-1 pl-3 pr-2
-                                    transition-colors hover:bg-paper">
+                                    transition-colors hover:bg-white">
                         <span class="hidden max-w-64 truncate text-sm font-medium sm:inline">{{ $accountLabel }}</span>
                         <span class="flex size-9 items-center justify-center rounded-full bg-brand-soft text-sm font-bold text-brand"
                               aria-hidden="true">{{ $initials }}</span>

@@ -14,14 +14,14 @@
 @theme {
     --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
 
-    --color-paper: #f3f5f8;
-    --color-rail: #eef1f5;
-    --color-ink: #1e2a38;        /* ~14:1 */
-    --color-ink-muted: #556270;  /* ~6.2:1 */
-    --color-line: #e1e6ec;
-    --color-brand: #2f4560;      /* navy, white on it ~9.8:1 */
-    --color-brand-dark: #22344a;
-    --color-brand-soft: #e7edf4;
+    --color-paper: #f1f3f5;
+    --color-rail: #f1f3f5;       /* same ground as the page and the top bar */
+    --color-ink: #202a35;        /* ~14.5:1 */
+    --color-ink-muted: #5b6774;  /* ~5.8:1, ~5.2:1 on paper */
+    --color-line: #d4dae1;
+    --color-brand: #344f68;      /* navy, white on it ~8.5:1 */
+    --color-brand-dark: #263e54;
+    --color-brand-soft: #e7ebef;
     --color-brand-tint: #f4f7fa;
     --color-quiet: #6b7682;      /* the grey second choice, white on it ~4.6:1 */
     --color-quiet-dark: #58626d;

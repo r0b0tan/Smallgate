@@ -7,6 +7,8 @@
     {{-- The portal must never show up in a search index. --}}
     <meta name="robots" content="noindex, nofollow">
     <title>@yield('title', 'Kundenportal') · {{ config('app.name') }}</title>
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="32x32">
+    <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="h-full min-h-full antialiased">
