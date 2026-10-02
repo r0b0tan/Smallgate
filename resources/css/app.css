@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /* Fonts are bundled from npm, never fetched from a CDN. */
-@import '@fontsource-variable/inter';
+@import '@fontsource-variable/source-sans-3';
 
 @source '../../storage/framework/views/*.php';
 
@@ -12,10 +12,10 @@
  * and on the paper ground.
  */
 @theme {
-    --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'Source Sans 3 Variable', ui-sans-serif, system-ui, sans-serif;
 
     --color-paper: #f1f3f5;
-    --color-rail: #f1f3f5;       /* same ground as the page and the top bar */
+    --color-rail: #e6eaee;       /* a shade below the page, so the rail needs no border */
     --color-ink: #202a35;        /* ~14.5:1 */
     --color-ink-muted: #5b6774;  /* ~5.8:1, ~5.2:1 on paper */
     --color-line: #d4dae1;
@@ -198,8 +198,12 @@
         background: linear-gradient(170deg, #43566a 0%, var(--color-slate) 50%, #2c3a49 100%);
     }
 
+    .sg-login-label {
+        @apply block text-lg font-medium text-ink;
+    }
+
     .sg-login-field {
-        @apply block min-h-12 w-full rounded-lg border-0 bg-white py-3 pl-11 text-base text-ink
+        @apply block min-h-12 w-full rounded-lg border-0 bg-white py-3 pl-11 text-lg text-ink
                ring-1 ring-inset ring-line placeholder:text-placeholder
                focus:ring-2 focus:ring-inset focus:ring-brand;
     }
@@ -232,6 +236,30 @@
         margin-top: 0;
         padding-top: 0;
         padding-bottom: 0;
+        visibility: hidden;
+    }
+}
+
+/*
+ * The footer bar (md and up) slides in over the first few rem of scrolling,
+ * driven by the scroll position -- no JavaScript. A page that cannot scroll
+ * has no active scroll timeline, so the bar simply stays; browsers without
+ * scroll-driven animations show it all the time. Imprint and privacy policy
+ * are always reachable either way.
+ */
+@supports (animation-timeline: scroll()) {
+    @media (min-width: 48rem) {
+        .sg-footer-bar {
+            animation: sg-footer-in linear both;
+            animation-timeline: scroll(root block);
+            animation-range: 0 4rem;
+        }
+    }
+}
+
+@keyframes sg-footer-in {
+    from {
+        transform: translateY(100%);
         visibility: hidden;
     }
 }

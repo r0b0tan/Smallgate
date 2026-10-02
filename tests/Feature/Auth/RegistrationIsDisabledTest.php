@@ -47,5 +47,5 @@ it('offers no registration link on the login page', function () {
 
     $response->assertOk();
     $response->assertDontSee('Registrieren', escape: false);
-    $response->assertSee('Zugangsdaten aus der Einladungs-E-Mail', escape: false);
+    $response->assertSeeText('Zugangsdaten aus der Einladungs-E-Mail');
 });

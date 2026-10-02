@@ -29,10 +29,10 @@
 @endphp
 
 @section('body')
-    <div class="min-h-full md:pl-18">
+    <div class="min-h-full md:pl-16">
         {{-- Icon rail. Each label sits next to its icon on hover and focus, and
              is always there for screen readers. --}}
-        <aside class="fixed inset-y-0 left-0 z-30 hidden w-18 flex-col items-center border-r border-line bg-rail py-4 md:flex">
+        <aside class="fixed inset-y-0 left-0 z-30 hidden w-16 flex-col items-center bg-rail py-4 md:flex">
             <a href="{{ route('home') }}" aria-label="{{ config('app.name') }} – zur Startseite">
                 <x-logo :wordmark="false" />
             </a>
@@ -107,7 +107,7 @@
             </div>
         </header>
 
-        <main class="max-w-7xl px-4 pb-28 pt-6 sm:px-6 md:pb-12 lg:px-10 lg:pt-8">
+        <main class="max-w-7xl px-4 pb-28 pt-6 sm:px-6 md:pb-20 lg:px-10 lg:pt-8">
             @hasSection('header')
                 <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
                     <div class="min-w-0">
@@ -127,8 +127,13 @@
 
             @yield('content')
 
-            <footer class="mt-16 flex flex-wrap justify-between gap-4 border-t border-line pt-6 text-sm sg-muted">
-                <span>&copy; {{ date('Y') }} {{ config('app.name') }}</span>
+            {{-- On wider screens a slim bar like the top bar, slid in once the page
+                 is scrolled; on phones it stays at the end of the page, above
+                 the bottom bar. --}}
+            <footer class="sg-footer-bar mt-16 flex flex-wrap justify-between gap-4 border-t border-line pt-6 text-sm sg-muted
+                           md:fixed md:right-0 md:bottom-0 md:left-16 md:z-20 md:mt-0 md:h-10 md:flex-nowrap md:items-center
+                           md:bg-paper/90 md:px-6 md:pt-0 md:text-xs md:backdrop-blur-md lg:px-10">
+                <span>&copy; {{ date('Y') }} CLICKIT DIGITAL</span>
                 <span class="flex gap-6">
                     <a class="hover:text-ink hover:underline" href="{{ route('legal.imprint') }}">Impressum</a>
                     <a class="hover:text-ink hover:underline" href="{{ route('legal.privacy') }}">Datenschutz</a>
@@ -159,6 +164,6 @@
         </nav>
 
         {{-- Above the bottom bar on phones. --}}
-        <x-flash class="bottom-24 md:bottom-6" />
+        <x-flash class="bottom-24 md:bottom-14" />
     </div>
 @endsection
