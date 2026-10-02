@@ -5,6 +5,9 @@
 
 @source '../../storage/framework/views/*.php';
 
+/* The navigation rail expanded by its nudge: data-rail="open" on the shell. */
+@custom-variant rail-open (&:where([data-rail=open], [data-rail=open] *));
+
 /*
  * One calm light theme for everybody -- sign-in, customer portal and the
  * administration alike. Many customers are not technical, some read on an
@@ -25,6 +28,7 @@
     --color-brand-tint: #f4f7fa;
     --color-quiet: #6b7682;      /* the grey second choice, white on it ~4.6:1 */
     --color-quiet-dark: #58626d;
+    --color-handle: #8a95a1;     /* the rail's toggle, white icon on it ~3:1 -- enough for a graphic */
 
     /* Sign-in page: a slate panel next to the form, on a cool blue-grey ground. */
     --color-ground: #dee5ee;
@@ -206,6 +210,20 @@
         @apply block min-h-12 w-full rounded-lg border-0 bg-white py-3 pl-11 text-lg text-ink
                ring-1 ring-inset ring-line placeholder:text-placeholder
                focus:ring-2 focus:ring-inset focus:ring-brand;
+    }
+
+    /* Rail labels: a tooltip on hover and focus while the rail is narrow,
+       written out next to the icon once it is expanded. Expanded, each label
+       is clipped by its link, so it is uncovered as the rail slides open.
+       Only the tooltip fades in; leaving it -- or collapsing the rail --
+       hides it at once instead of flashing it next to the shrinking rail. */
+    .sg-rail-label {
+        @apply pointer-events-none absolute left-full z-40 ml-3.5 whitespace-nowrap rounded-md bg-ink px-2.5 py-1.5
+               text-sm font-medium text-white opacity-0 shadow-lift
+               group-hover:opacity-100 group-hover:transition-opacity
+               group-focus-visible:opacity-100 group-focus-visible:transition-opacity
+               rail-open:static rail-open:ml-0 rail-open:min-w-0 rail-open:overflow-hidden rail-open:bg-transparent
+               rail-open:p-0 rail-open:text-current rail-open:opacity-100 rail-open:shadow-none;
     }
 
     /* Admin tables: one look for every list. */

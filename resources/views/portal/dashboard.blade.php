@@ -76,11 +76,6 @@
                     <span class="size-2 rounded-full bg-amber-500" aria-hidden="true"></span>
                     Ein Entwurf wartet auf Ihre Meinung
                 </p>
-            @elseif ($loop->first && $previews->isNotEmpty())
-                <p class="mt-3 flex items-center gap-2 text-base font-medium text-emerald-800" role="status">
-                    <x-icon name="check" class="size-4" />
-                    Alles erledigt – vielen Dank! Wir melden uns, sobald es Neues gibt.
-                </p>
             @endif
 
             <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start xl:grid-cols-[minmax(0,1fr)_22rem]">

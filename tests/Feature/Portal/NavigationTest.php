@@ -28,3 +28,18 @@ it('offers an administrator dashboard, customers and projects', function () {
         ->assertSee(route('admin.projects.index'), escape: false)
         ->assertDontSee(route('portal.feedback.index'), escape: false);
 });
+
+it('renders the rail narrow by default and expanded once the nudge has set its cookie', function () {
+    $user = $this->customerUser(Customer::factory()->create());
+
+    $this->actingAs($user)
+        ->get(route('portal.dashboard'))
+        ->assertSee('data-rail="closed"', escape: false)
+        ->assertSee('aria-expanded="false"', escape: false);
+
+    $this->actingAs($user)
+        ->withUnencryptedCookie('sg_rail', 'open')
+        ->get(route('portal.dashboard'))
+        ->assertSee('data-rail="open"', escape: false)
+        ->assertSee('aria-expanded="true"', escape: false);
+});

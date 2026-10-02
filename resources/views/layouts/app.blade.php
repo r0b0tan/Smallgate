@@ -12,6 +12,9 @@
     // Customers see the company they sign in for, administrators themselves.
     $accountLabel = $user?->isAdmin() ? $user->name : ($user?->customer?->name ?? $user?->name);
 
+    // Set by the nudge on the rail (app.js), so the next page starts expanded.
+    $railOpen = request()->cookie('sg_rail') === 'open';
+
     $navigation = $user?->isAdmin()
         ? [
             ['label' => 'Dashboard', 'icon' => 'home', 'url' => route('admin.dashboard'), 'active' => 'admin.dashboard'],
@@ -29,11 +32,14 @@
 @endphp
 
 @section('body')
-    <div class="min-h-full md:pl-16">
+    <div class="min-h-full transition-[padding] duration-200 ease-out motion-reduce:transition-none md:pl-16 md:rail-open:pl-56" data-rail="{{ $railOpen ? 'open' : 'closed' }}">
         {{-- Icon rail. Each label sits next to its icon on hover and focus, and
-             is always there for screen readers. --}}
-        <aside class="fixed inset-y-0 left-0 z-30 hidden w-16 flex-col items-center bg-rail py-4 md:flex">
-            <a href="{{ route('home') }}" aria-label="{{ config('app.name') }} – zur Startseite">
+             is always there for screen readers. Expanded, the labels are
+             written out next to the icons. --}}
+        <aside class="fixed inset-y-0 left-0 z-30 hidden w-16 flex-col bg-rail px-2.75 py-4 transition-[width] duration-200
+                      ease-out motion-reduce:transition-none md:flex rail-open:w-56">
+            <a href="{{ route('home') }}" class="flex size-10.5 items-center justify-center"
+               aria-label="{{ config('app.name') }} – zur Startseite">
                 <x-logo :wordmark="false" />
             </a>
 
@@ -43,14 +49,12 @@
                     <a href="{{ $item['url'] }}"
                        @if ($current) aria-current="page" @endif
                        @class([
-                           'group relative flex size-11 items-center justify-center rounded-md transition-colors',
+                           'group relative flex h-10.5 items-center gap-3 rounded-md px-2.25 transition-colors',
                            'bg-brand text-white shadow-sm' => $current,
                            'text-ink-muted hover:bg-white hover:text-ink' => ! $current,
                        ])>
                         <x-icon :name="$item['icon']" class="size-6" />
-                        <span class="pointer-events-none absolute left-full z-40 ml-3 whitespace-nowrap rounded-md bg-ink px-2.5 py-1.5
-                                     text-sm font-medium text-white opacity-0 shadow-lift transition-opacity
-                                     group-hover:opacity-100 group-focus-visible:opacity-100">{{ $item['label'] }}</span>
+                        <span class="sg-rail-label">{{ $item['label'] }}</span>
                     </a>
                 @endforeach
             </nav>
@@ -58,14 +62,29 @@
             <form method="POST" action="{{ route('logout') }}" class="mt-auto">
                 @csrf
                 <button type="submit"
-                        class="group relative flex size-11 items-center justify-center rounded-md bg-brand text-white
+                        class="group relative flex h-10.5 w-full items-center gap-3 rounded-md bg-brand px-2.25 text-white
                                transition-colors hover:bg-brand-dark">
                     <x-icon name="logout" class="size-6" />
-                    <span class="pointer-events-none absolute left-full z-40 ml-3 whitespace-nowrap rounded-md bg-ink px-2.5 py-1.5
-                                 text-sm font-medium text-white opacity-0 shadow-lift transition-opacity
-                                 group-hover:opacity-100 group-focus-visible:opacity-100">Abmelden</span>
+                    <span class="sg-rail-label">Abmelden</span>
                 </button>
             </form>
+
+            {{-- A small round handle on the rail's edge, a mid grey that stands
+                 out against rail and page alike. Its tooltip is also its
+                 accessible name: only the phrase for the current state is
+                 displayed. It needs app.js and stays hidden without it; the
+                 labels then still show on hover. --}}
+            <button type="button" hidden data-rail-toggle aria-expanded="{{ $railOpen ? 'true' : 'false' }}"
+                    class="group absolute left-full top-1/2 flex size-7 -translate-x-1/2 -translate-y-1/2 items-center
+                           justify-center rounded-full bg-handle text-white shadow-card transition-colors hover:bg-quiet">
+                <x-icon name="chevron-right" class="size-4 stroke-[2.2] transition-transform duration-200 rail-open:rotate-180" />
+                <span class="pointer-events-none absolute left-full z-40 ml-3 whitespace-nowrap rounded-md bg-ink px-2.5 py-1.5
+                             text-sm font-medium text-white opacity-0 shadow-lift group-hover:opacity-100
+                             group-hover:transition-opacity group-focus-visible:opacity-100">
+                    <span class="rail-open:hidden">Menü öffnen</span>
+                    <span class="hidden rail-open:inline">Menü einklappen</span>
+                </span>
+            </button>
         </aside>
 
         <header class="sticky top-0 z-20 border-b border-line bg-paper/90 backdrop-blur-md">
@@ -131,8 +150,9 @@
                  is scrolled; on phones it stays at the end of the page, above
                  the bottom bar. --}}
             <footer class="sg-footer-bar mt-16 flex flex-wrap justify-between gap-4 border-t border-line pt-6 text-sm sg-muted
-                           md:fixed md:right-0 md:bottom-0 md:left-16 md:z-20 md:mt-0 md:h-10 md:flex-nowrap md:items-center
-                           md:bg-paper/90 md:px-6 md:pt-0 md:text-xs md:backdrop-blur-md lg:px-10">
+                           md:fixed md:right-0 md:bottom-0 md:left-16 md:z-20 md:rail-open:left-56 md:mt-0 md:h-10 md:flex-nowrap md:items-center
+                           md:bg-paper/90 md:px-6 md:pt-0 md:text-xs md:backdrop-blur-md md:transition-[left] md:duration-200
+                           md:ease-out md:motion-reduce:transition-none lg:px-10">
                 <span>&copy; {{ date('Y') }} CLICKIT DIGITAL</span>
                 <span class="flex gap-6">
                     <a class="hover:text-ink hover:underline" href="{{ route('legal.imprint') }}">Impressum</a>

@@ -47,3 +47,27 @@ document.querySelectorAll('[data-password-toggle]').forEach((button) => {
     button.addEventListener('click', () => render(input.type === 'password'));
     input.form?.addEventListener('submit', () => render(false));
 });
+
+/**
+ * The handle on the navigation rail's edge expands it to written-out labels
+ * and back. The choice goes into a cookie, so the layout renders the next page
+ * the same way right away instead of flashing the narrow rail first.
+ */
+document.querySelectorAll('[data-rail-toggle]').forEach((button) => {
+    const shell = button.closest('[data-rail]');
+
+    if (!shell) {
+        return;
+    }
+
+    const secure = location.protocol === 'https:' ? '; Secure' : '';
+
+    const render = (open) => {
+        shell.dataset.rail = open ? 'open' : 'closed';
+        button.setAttribute('aria-expanded', String(open));
+        document.cookie = `sg_rail=${open ? 'open' : ''}; Path=/; Max-Age=${open ? 31536000 : 0}; SameSite=Lax${secure}`;
+    };
+
+    button.hidden = false;
+    button.addEventListener('click', () => render(shell.dataset.rail !== 'open'));
+});

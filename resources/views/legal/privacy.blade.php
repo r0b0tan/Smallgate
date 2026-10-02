@@ -36,7 +36,8 @@
             <h2 class="font-semibold text-ink">Cookies</h2>
             <p class="mt-1">
                 Es werden ausschließlich technisch notwendige Cookies gesetzt: ein Sitzungscookie für
-                die Anmeldung und ein Cookie zum Schutz vor Cross-Site-Request-Forgery. Es findet kein
+                die Anmeldung, ein Cookie zum Schutz vor Cross-Site-Request-Forgery und – sobald Sie die
+                Navigationsleiste ausklappen – ein Cookie, das sich diese Einstellung merkt. Es findet kein
                 Tracking statt, es werden keine Analysedienste und keine externen JavaScript-Dienste
                 eingebunden. Schriftarten werden lokal ausgeliefert.
             </p>

@@ -50,7 +50,7 @@ it('records "Passt so" for the version the customer saw and confirms it', functi
         ->assertOk()
         ->assertSee('Sie haben den Entwurf am')
         ->assertSee('Nur das Datum fehlt.')
-        ->assertSee('Alles erledigt')
+        ->assertDontSee('Alles erledigt')
         ->assertDontSee('Wartet auf Ihre Meinung')
         ->assertDontSee('wartet auf Ihre Meinung');
 

@@ -39,6 +39,10 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureAccountIsActive::class,
         ]);
 
+        // Whether the navigation rail is expanded: set by app.js, read by the
+        // layout. A plain "open" carries nothing worth encrypting.
+        $middleware->encryptCookies(except: ['sg_rail']);
+
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
         ]);
