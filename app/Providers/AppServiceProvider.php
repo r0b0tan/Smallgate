@@ -7,6 +7,7 @@ use App\Services\Previews\NullPreviewProvisioner;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -33,6 +34,9 @@ class AppServiceProvider extends ServiceProvider
         $this->configurePasswords();
         $this->configureTrustedProxies();
         $this->configureUrls();
+
+        // One page navigation in the portal's own look and wording.
+        Paginator::defaultView('pagination');
     }
 
     private function configureModels(): void

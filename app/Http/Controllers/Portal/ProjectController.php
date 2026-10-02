@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Concerns\ResolvesPortalPreviews;
 use App\Http\Controllers\Controller;
+use App\Models\PreviewFeedback;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -40,6 +41,14 @@ class ProjectController extends Controller
 
         return view('portal.dashboard', [
             'projects' => collect([$model]),
+            'recentFeedback' => PreviewFeedback::query()
+                ->visibleTo($request->user())
+                ->whereRelation('preview', 'project_id', $model->id)
+                ->with('preview.project')
+                ->latest()
+                ->orderByDesc('id')
+                ->take(3)
+                ->get(),
         ]);
     }
 

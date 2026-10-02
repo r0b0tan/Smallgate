@@ -39,9 +39,9 @@
             </x-empty>
         @endif
     @else
-        <div class="overflow-x-auto rounded-xl ring-1 ring-white/5">
-            <table class="min-w-full divide-y divide-white/5 text-sm">
-                <thead class="bg-surface text-left text-xs uppercase tracking-wide sg-muted">
+        <div class="overflow-x-auto rounded-lg bg-white shadow-card ring-1 ring-line">
+            <table class="sg-table">
+                <thead>
                     <tr>
                         <th class="px-4 py-3 font-medium">Projekt</th>
                         <th class="px-4 py-3 font-medium">Kunde</th>
@@ -50,16 +50,16 @@
                         <th class="px-4 py-3"><span class="sr-only">Aktionen</span></th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-white/5 bg-surface/40">
+                <tbody>
                     @foreach ($projects as $project)
-                        <tr class="hover:bg-white/[0.02]">
+                        <tr class="hover:bg-brand-tint">
                             <td class="px-4 py-3">
                                 <a href="{{ route('admin.projects.show', $project) }}"
-                                   class="font-medium text-white hover:text-accent">{{ $project->name }}</a>
+                                   class="font-medium text-ink hover:text-brand">{{ $project->name }}</a>
                             </td>
                             <td class="px-4 py-3 sg-muted">
                                 <a href="{{ route('admin.customers.show', $project->customer) }}"
-                                   class="hover:text-accent">{{ $project->customer->name }}</a>
+                                   class="hover:text-brand">{{ $project->customer->name }}</a>
                             </td>
                             <td class="px-4 py-3 sg-muted">{{ $project->previews_count }}</td>
                             <td class="px-4 py-3">
@@ -69,7 +69,7 @@
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <a href="{{ route('admin.projects.edit', $project) }}"
-                                   class="text-xs sg-faint hover:text-accent">Bearbeiten</a>
+                                   class="text-xs sg-faint hover:text-brand">Bearbeiten</a>
                             </td>
                         </tr>
                     @endforeach

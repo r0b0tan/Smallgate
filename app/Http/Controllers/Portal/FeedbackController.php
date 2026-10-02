@@ -25,7 +25,26 @@ class FeedbackController extends Controller
     use ResolvesPortalPreviews;
 
     /**
-     * The change request form: one optional text field and one button.
+     * Every answer anybody at this customer has given, newest first -- the
+     * archive behind "Letzte Rückmeldungen". Read only.
+     */
+    public function index(Request $request): View
+    {
+        $this->authorize('viewAny', PreviewFeedback::class);
+
+        return view('portal.feedback.index', [
+            'feedback' => PreviewFeedback::query()
+                ->visibleTo($request->user())
+                ->with(['preview.project', 'user'])
+                ->latest()
+                ->orderByDesc('id')
+                ->paginate(15),
+        ]);
+    }
+
+    /**
+     * The change request form on its own page: one optional text field and one
+     * button. Reached from an already answered card, to revise the answer.
      */
     public function create(Request $request, string $project, string $preview): View
     {
@@ -67,8 +86,8 @@ class FeedbackController extends Controller
 
         $feedback = new PreviewFeedback;
         $feedback->decision = $decision;
-        // A comment only belongs to a change request; the database agrees.
-        $feedback->comment = $decision === FeedbackDecision::ChangesRequested ? ($validated['comment'] ?? null) : null;
+        // Optional with either answer: "Passt so, nur das Datum stimmt nicht".
+        $feedback->comment = $validated['comment'] ?? null;
         $feedback->preview_id = $previewModel->id;
         $feedback->user_id = $request->user()->id;
         $feedback->preview_version = $previewModel->version;

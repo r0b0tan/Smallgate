@@ -1,23 +1,23 @@
 /**
  * The portal is deliberately almost JavaScript free: no framework, no tracking,
- * no third-party scripts. This file only toggles the mobile navigation, which
- * has no sensible server-rendered equivalent.
+ * no third-party scripts. The account menu is a plain <details> element and
+ * works without this file; this only closes it again on a click elsewhere or
+ * on Escape, which <details> does not do by itself.
  */
+const closeMenus = (except = null) => {
+    document.querySelectorAll('details[data-menu][open]').forEach((menu) => {
+        if (menu !== except) {
+            menu.removeAttribute('open');
+        }
+    });
+};
+
 document.addEventListener('click', (event) => {
-    const trigger = event.target.closest('[data-toggle]');
+    closeMenus(event.target.closest('details[data-menu]'));
+});
 
-    if (!trigger) {
-        return;
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        closeMenus();
     }
-
-    const target = document.getElementById(trigger.dataset.toggle);
-
-    if (!target) {
-        return;
-    }
-
-    const isHidden = target.hasAttribute('hidden');
-
-    target.toggleAttribute('hidden', !isHidden);
-    trigger.setAttribute('aria-expanded', String(isHidden));
 });

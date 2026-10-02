@@ -157,12 +157,16 @@ class PreviewTargetGuard
 
         $allowed = array_map('strtolower', (array) config('previews.allowed_upstream_hosts', []));
 
+        // Both messages name the setting to change, but never the host itself:
+        // the reason is logged, and the target must not end up in the log.
         if ($allowed === []) {
-            return 'Es sind keine Upstream-Hosts freigegeben.';
+            return 'Upstream-URLs sind auf diesem Server nicht freigeschaltet. '
+                .'Erlaubte Hosts werden in der .env unter PREVIEW_ALLOWED_UPSTREAM_HOSTS eingetragen.';
         }
 
         if (! in_array($host, $allowed, true)) {
-            return 'Der Upstream-Host ist nicht freigegeben.';
+            return 'Der Host dieser URL ist nicht freigegeben. Erlaubt sind nur die Hosts aus '
+                .'PREVIEW_ALLOWED_UPSTREAM_HOSTS in der .env, exakt und ohne weitere Subdomains.';
         }
 
         return null;

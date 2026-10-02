@@ -3,14 +3,16 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Models\PreviewFeedback;
 use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * The customer's one page: every draft they are offered, newest and unanswered
- * first, each with its own "view" and "answer" buttons. No navigation, no
- * second level -- a customer with several projects sees them on the same page.
+ * The customer's one page: the status of each project with every draft they
+ * are offered, unanswered first, each with its own "view" and "answer"
+ * buttons, and the last few answers beside it. No second level -- a customer
+ * with several projects sees them on the same page.
  */
 class DashboardController extends Controller
 {
@@ -28,6 +30,13 @@ class DashboardController extends Controller
 
         return view('portal.dashboard', [
             'projects' => $projects,
+            'recentFeedback' => PreviewFeedback::query()
+                ->visibleTo($request->user())
+                ->with('preview.project')
+                ->latest()
+                ->orderByDesc('id')
+                ->take(3)
+                ->get(),
         ]);
     }
 }

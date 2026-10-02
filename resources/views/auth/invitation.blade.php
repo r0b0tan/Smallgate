@@ -3,7 +3,7 @@
 @section('title', 'Zugang einrichten')
 
 @section('card')
-    <h1 class="text-2xl font-bold">Zugang einrichten</h1>
+    <h1 class="text-2xl font-semibold tracking-tight">Zugang einrichten</h1>
     <p class="mt-2 text-base sg-muted">
         Sie richten den Zugang für
         <strong class="text-ink">{{ $invitation->email }}</strong>
@@ -29,6 +29,6 @@
         <x-field name="password_confirmation" label="Passwort wiederholen" type="password" required
                  autocomplete="new-password" />
 
-        <button type="submit" class="sg-btn-primary w-full">Zugang aktivieren</button>
+        <button type="submit" class="sg-btn-primary min-h-12 w-full text-base">Zugang aktivieren</button>
     </form>
 @endsection

@@ -15,7 +15,9 @@ class PreviewFeedbackPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->isAdmin() && $user->canAccessPortal();
+        // Both roles may list feedback; the *query* is what restricts a
+        // customer user to their own (see PreviewFeedback::scopeVisibleTo).
+        return $user->canAccessPortal();
     }
 
     public function create(User $user, Preview $preview): bool

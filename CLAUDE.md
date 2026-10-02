@@ -11,7 +11,7 @@ E-Mail. Features außerhalb des MVP nicht hinzufügen.
 ## Stack
 
 - Laravel 13, PHP 8.4, PostgreSQL 17
-- Blade + Tailwind CSS 4, minimal JavaScript (nur Mobile-Nav-Toggle)
+- Blade + Tailwind CSS 4, minimal JavaScript (nur Schließen des Konto-Menüs)
 - Pest 5 / PHPUnit 13, Tests gegen echtes PostgreSQL (nicht SQLite)
 - Docker Compose, Mailpit
 - Queue: Datenbank-Treiber, Worker-Service `worker` in Compose

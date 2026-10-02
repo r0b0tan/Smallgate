@@ -46,11 +46,11 @@ enum PreviewStatus: string
     public function badgeClasses(): string
     {
         return match ($this) {
-            self::Draft => 'bg-white/5 text-white/60 ring-white/10',
-            self::Provisioning => 'bg-sky-400/10 text-sky-300 ring-sky-400/30',
-            self::Available => 'bg-accent/10 text-accent ring-accent/30',
-            self::Disabled => 'bg-white/5 text-white/50 ring-white/10',
-            self::Failed => 'bg-red-400/10 text-red-300 ring-red-400/30',
+            self::Draft => 'bg-slate-100 text-slate-700 ring-slate-200',
+            self::Provisioning => 'bg-sky-50 text-sky-900 ring-sky-200',
+            self::Available => 'bg-emerald-50 text-emerald-800 ring-emerald-200',
+            self::Disabled => 'bg-slate-100 text-slate-600 ring-slate-200',
+            self::Failed => 'bg-red-50 text-red-800 ring-red-200',
         };
     }
 

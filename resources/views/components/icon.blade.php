@@ -17,6 +17,16 @@
         'message' => '<path d="M4 5h16v11H9l-5 4V5z"/>',
         'browser' => '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 8h18M7 12h6M7 15h10"/>',
         'folder' => '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>',
+        'home' => '<path d="M4 11l8-7 8 7"/><path d="M6 9.5V20h4.5v-5h3v5H18V9.5"/>',
+        'users' => '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.4c2.1.7 3.5 2.7 3.5 5.6"/>',
+        'user' => '<circle cx="12" cy="8" r="4"/><path d="M4 20.5c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/>',
+        'list' => '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" stroke-width="2.6"/>',
+        'chat' => '<path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.1A8 8 0 1 1 20 12z"/>',
+        'chevron-down' => '<path d="M6 9l6 6 6-6"/>',
+        'x' => '<path d="M6 6l12 12M18 6L6 18"/>',
+        'file' => '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/>',
+        'check-circle' => '<circle cx="12" cy="12" r="10" fill="currentColor" stroke="none"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2"/>',
+        'edit-circle' => '<circle cx="12" cy="12" r="10" fill="currentColor" stroke="none"/><path d="M8 16h2.2l5.6-5.6-2.2-2.2L8 13.8V16z" stroke="#fff" stroke-width="1.6"/>',
         default => '',
     };
 @endphp

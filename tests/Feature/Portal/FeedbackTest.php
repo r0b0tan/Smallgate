@@ -33,7 +33,7 @@ it('records "Passt so" for the version the customer saw and confirms it', functi
     $preview = offeredPreview($customer);
 
     $this->actingAs($user)
-        ->post(feedbackRoute($preview), ['decision' => 'approved', 'version' => 1, 'comment' => 'ignoriert'])
+        ->post(feedbackRoute($preview), ['decision' => 'approved', 'version' => 1, 'comment' => '  Nur das Datum fehlt.  '])
         ->assertRedirect(route('portal.dashboard').'#entwurf-'.$preview->id)
         ->assertSessionHas('feedback_sent', $preview->id);
 
@@ -43,12 +43,13 @@ it('records "Passt so" for the version the customer saw and confirms it', functi
         ->and($feedback->preview_id)->toBe($preview->id)
         ->and($feedback->user_id)->toBe($user->id)
         ->and($feedback->preview_version)->toBe(1)
-        // A comment only belongs to a change request.
-        ->and($feedback->comment)->toBeNull();
+        // The note field sits under both buttons and goes with either answer.
+        ->and($feedback->comment)->toBe('Nur das Datum fehlt.');
 
     $this->actingAs($user)->get(route('portal.dashboard'))
         ->assertOk()
         ->assertSee('Sie haben den Entwurf am')
+        ->assertSee('Nur das Datum fehlt.')
         ->assertSee('Alles erledigt')
         ->assertDontSee('Wartet auf Ihre Meinung')
         ->assertDontSee('wartet auf Ihre Meinung');
@@ -194,6 +195,30 @@ it('answers 404 for feedback on a foreign, unknown or unreleased preview', funct
     expect(PreviewFeedback::count())->toBe(0);
 });
 
+it('lists the last three answers of the customer beside the drafts', function () {
+    $customer = Customer::factory()->create();
+    $user = $this->customerUser($customer);
+    $colleague = $this->customerUser($customer);
+    $project = Project::factory()->for_customer($customer)->create();
+
+    foreach (['Startseite', 'Kontaktseite', 'Impressum', 'Leistungen'] as $i => $name) {
+        $preview = Preview::factory()->for_project($project)->available()->create(['name' => $name]);
+        PreviewFeedback::factory()->create([
+            'preview_id' => $preview->id,
+            'user_id' => $i % 2 === 0 ? $user->id : $colleague->id,
+            'created_at' => now()->subDays(10 - $i),
+        ]);
+    }
+
+    $response = $this->actingAs($user)->get(route('portal.dashboard'))
+        ->assertOk()
+        ->assertSeeInOrder(['Letzte Rückmeldungen', 'Leistungen', 'Impressum', 'Kontaktseite'])
+        ->assertSee('Passt so!');
+
+    // Newest first, and only three: the oldest answer is not in the list.
+    expect(Str::after($response->getContent(), 'Letzte Rückmeldungen'))->not->toContain('Startseite');
+});
+
 it('does not show one customer the feedback of another', function () {
     $mine = Customer::factory()->create();
     $user = $this->customerUser($mine);
@@ -243,12 +268,12 @@ it('sends guests to the login page', function () {
     expect(PreviewFeedback::count())->toBe(0);
 });
 
-it('enforces the comment rule in the database as well', function () {
+it('enforces the comment length in the database as well', function () {
     $preview = offeredPreview();
 
     $feedback = new PreviewFeedback;
     $feedback->decision = FeedbackDecision::Approved;
-    $feedback->comment = 'Kommentar zu einer Zustimmung';
+    $feedback->comment = str_repeat('x', 2001);
     $feedback->preview_id = $preview->id;
     $feedback->user_id = User::factory()->create()->id;
     $feedback->preview_version = 1;

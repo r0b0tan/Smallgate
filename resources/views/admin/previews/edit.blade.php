@@ -2,7 +2,7 @@
 
 @section('title', 'Vorschau bearbeiten')
 @section('breadcrumb')
-    <a href="{{ route('admin.projects.show', $project) }}" class="hover:text-white">{{ $project->name }}</a>
+    <a href="{{ route('admin.projects.show', $project) }}" class="hover:text-ink">{{ $project->name }}</a>
 @endsection
 @section('header', 'Vorschau bearbeiten')
 

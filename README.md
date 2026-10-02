@@ -15,9 +15,12 @@ where they already work.
 ## Screens in one paragraph
 
 An administrator creates customers, projects and previews, and invites the
-people who may see them. A customer signs in and lands on a single page — "Guten Morgen", "Guten
-Tag" or "Guten Abend", then every draft as a card with a screenshot, one big **Entwurf ansehen** button, and two
-answers — **Passt so** or **Änderung wünschen** (with an optional comment). The
+people who may see them. A customer signs in and lands on a single page: the
+status of each project, every draft as a card with a screenshot, an **Entwurf
+ansehen** button and two answers — **Passt so** or **Änderung wünschen**, with an
+optional note — and beside it the last three answers. The speech bubble in the
+navigation opens **Nachrichten**, the paginated archive of every answer given;
+it is not a chat, replies still come by email (to `CONTACT_EMAIL`). The
 administrator sees the answers on the project page and the dashboard. There is
 no public sign-up: accounts exist only because somebody was invited.
 

@@ -1,4 +1,4 @@
-@extends(auth()->user()?->isAdmin() ? 'layouts.app' : 'layouts.portal')
+@extends('layouts.app')
 
 @section('title', 'Profil')
 @section('header', 'Profil')

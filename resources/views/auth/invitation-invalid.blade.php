@@ -3,7 +3,7 @@
 @section('title', 'Einladung ungültig')
 
 @section('card')
-    <h1 class="text-2xl font-bold">Einladung nicht mehr gültig</h1>
+    <h1 class="text-2xl font-semibold tracking-tight">Einladung nicht mehr gültig</h1>
 
     {{-- Deliberately one message for "unknown", "expired" and "already used":
          the page must not confirm that a token ever existed. --}}
@@ -16,5 +16,5 @@
         Haben Sie Ihren Zugang schon eingerichtet? Dann melden Sie sich einfach an.
     </p>
 
-    <a href="{{ route('login') }}" class="sg-btn-primary mt-6 w-full">Zur Anmeldung</a>
+    <a href="{{ route('login') }}" class="sg-btn-primary mt-6 min-h-12 w-full text-base">Zur Anmeldung</a>
 @endsection

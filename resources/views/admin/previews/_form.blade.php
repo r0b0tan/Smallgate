@@ -18,7 +18,7 @@
     <x-field name="target" label="Ziel" :value="$preview->target"
              hint="Nur Werte innerhalb der serverseitig freigegebenen Verzeichnisse bzw. Upstream-Hosts. Eine Upstream-URL (z. B. https://customer.example.com/zimmerei) öffnen Kunden direkt, samt Pfad; ein Verzeichnispfad bleibt intern." />
 
-    <p class="rounded-lg bg-white/5 px-4 py-3 text-xs sg-muted">
+    <p class="rounded-md bg-brand-tint px-4 py-3 ring-1 ring-inset ring-line text-xs sg-muted">
         Der Status wird hier nicht gesetzt: Eine neue Vorschau ist ein Entwurf und wird über
         „Bereitstellen“ freigegeben. Das Ziel wird gegen die Allowlist in
         <span class="font-mono">config/previews.php</span> geprüft – Pfade außerhalb der

@@ -85,12 +85,25 @@ return [
     | Display Time Zone
     |--------------------------------------------------------------------------
     |
-    | Timestamps are stored in UTC. The customer portal shows dates -- and picks
-    | "Guten Morgen" or "Guten Abend" -- in this zone.
+    | Timestamps are stored in UTC. The customer portal shows dates in this
+    | zone.
     |
     */
 
     'display_timezone' => env('DISPLAY_TIMEZONE', 'Europe/Berlin'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Contact
+    |--------------------------------------------------------------------------
+    |
+    | The customer's message archive offers a mail to this address. There is
+    | deliberately no chat: conversations stay in email. Without an address
+    | the button is not shown.
+    |
+    */
+
+    'contact_email' => env('CONTACT_EMAIL', env('LEGAL_EMAIL', '')),
 
     /*
     |--------------------------------------------------------------------------

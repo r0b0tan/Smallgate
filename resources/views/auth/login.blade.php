@@ -3,7 +3,7 @@
 @section('title', 'Anmelden')
 
 @section('card')
-    <h1 class="text-2xl font-bold">Willkommen</h1>
+    <h1 class="text-2xl font-semibold tracking-tight">Willkommen</h1>
     <p class="mt-2 text-base sg-muted">
         Bitte melden Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort an.
     </p>
@@ -43,7 +43,7 @@
             </a>
         </div>
 
-        <button type="submit" class="sg-btn-primary w-full">Anmelden</button>
+        <button type="submit" class="sg-btn-primary min-h-12 w-full text-base">Anmelden</button>
     </form>
 
     <p class="mt-6 border-t border-line pt-5 text-sm sg-muted">

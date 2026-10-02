@@ -27,11 +27,11 @@ enum ProjectStatus: string
     public function badgeClasses(): string
     {
         return match ($this) {
-            self::Draft => 'bg-white/5 text-white/60 ring-white/10',
-            self::Active => 'bg-accent/10 text-accent ring-accent/30',
-            self::WaitingForFeedback => 'bg-amber-400/10 text-amber-300 ring-amber-400/30',
-            self::Completed => 'bg-emerald-400/10 text-emerald-300 ring-emerald-400/30',
-            self::Archived => 'bg-white/5 text-white/50 ring-white/10',
+            self::Draft => 'bg-slate-100 text-slate-700 ring-slate-200',
+            self::Active => 'bg-emerald-50 text-emerald-800 ring-emerald-200',
+            self::WaitingForFeedback => 'bg-amber-50 text-amber-900 ring-amber-200',
+            self::Completed => 'bg-sky-50 text-sky-900 ring-sky-200',
+            self::Archived => 'bg-slate-100 text-slate-600 ring-slate-200',
         };
     }
 

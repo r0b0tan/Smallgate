@@ -9,7 +9,6 @@
 use App\Models\Customer;
 use App\Models\Preview;
 use App\Models\Project;
-use Illuminate\Support\Carbon;
 
 /* ----------------------------------------------------------- requirement 6 */
 
@@ -213,23 +212,3 @@ it('sends guests to the login page instead of leaking anything', function () {
     $this->get(route('portal.projects.show', $project))->assertRedirect(route('login'));
     $this->get(route('portal.previews.show', [$project, $preview]))->assertRedirect(route('login'));
 });
-
-/* ---------------------------------------------------------------- greeting */
-
-it('greets by time of day in the display time zone, without a name', function (string $berlinTime, string $greeting) {
-    $user = $this->customerUser(attributes: ['name' => 'Max Schneider']);
-
-    Carbon::setTestNow(
-        Carbon::parse('2026-10-02 '.$berlinTime, 'Europe/Berlin')
-    );
-
-    $html = $this->actingAs($user)->get(route('portal.dashboard'))->assertOk()->getContent();
-
-    expect($html)->toMatch('#<h1[^>]*>\s*'.$greeting.'\s*</h1>#');
-
-    Carbon::setTestNow();
-})->with([
-    ['08:00', 'Guten Morgen'],
-    ['14:00', 'Guten Tag'],
-    ['21:30', 'Guten Abend'],
-]);

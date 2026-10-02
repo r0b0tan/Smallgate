@@ -30,17 +30,17 @@
                       @if ($required) required @endif
                       {{ $attributes->merge(['class' => 'sg-field']) }}>{{ $displayValue }}</textarea>
         @elseif ($suffix !== null)
-            <div class="flex rounded-lg bg-white/5 ring-1 ring-inset ring-white/10
-                        focus-within:ring-2 focus-within:ring-accent">
+            <div class="flex rounded-md bg-white ring-1 ring-inset ring-line
+                        focus-within:ring-2 focus-within:ring-brand">
                 <input id="{{ $name }}" name="{{ $name }}" type="{{ $type }}"
                        value="{{ $displayValue }}"
                        @if ($required) required @endif
                        @if ($autocomplete) autocomplete="{{ $autocomplete }}" @endif
                        {{ $attributes->merge([
-                           'class' => 'w-full min-w-0 border-0 bg-transparent px-3 py-2 text-white
-                                       placeholder:text-white/45 focus:outline-none focus:ring-0 sm:text-sm',
+                           'class' => 'w-full min-w-0 border-0 bg-transparent px-3.5 py-2.5 text-base text-ink
+                                       placeholder:text-ink-muted/80 focus:outline-none focus:ring-0',
                        ]) }}>
-                <span class="flex select-none items-center whitespace-nowrap pr-3 font-mono text-sm sg-muted">
+                <span class="flex select-none items-center whitespace-nowrap pr-3.5 font-mono text-sm sg-muted">
                     {{ $suffix }}
                 </span>
             </div>

@@ -3,7 +3,7 @@
 @section('title', 'Passwort vergessen')
 
 @section('card')
-    <h1 class="text-2xl font-bold">Passwort vergessen</h1>
+    <h1 class="text-2xl font-semibold tracking-tight">Passwort vergessen</h1>
     <p class="mt-2 text-base sg-muted">
         Wir senden Ihnen einen Link, mit dem Sie ein neues Passwort vergeben können.
     </p>
@@ -22,7 +22,7 @@
         <x-field name="email" label="E-Mail-Adresse" type="email" required
                  autocomplete="username" />
 
-        <button type="submit" class="sg-btn-primary w-full">Link anfordern</button>
+        <button type="submit" class="sg-btn-primary min-h-12 w-full text-base">Link anfordern</button>
     </form>
 
     <p class="mt-6 text-center text-base">

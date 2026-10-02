@@ -89,6 +89,16 @@ it('rejects every upstream url when no host is allow-listed', function () {
     ))->toBeFalse();
 });
 
+it('says where upstream hosts are allow-listed, without repeating the target', function () {
+    $foreign = $this->guard->rejectionReason(PreviewTargetType::UpstreamUrl, 'https://evil.example.com/');
+
+    config(['previews.allowed_upstream_hosts' => []]);
+    $none = $this->guard->rejectionReason(PreviewTargetType::UpstreamUrl, 'https://staging.clickit-digital.test/');
+
+    expect($foreign)->toContain('PREVIEW_ALLOWED_UPSTREAM_HOSTS')->not->toContain('evil.example.com')
+        ->and($none)->toContain('PREVIEW_ALLOWED_UPSTREAM_HOSTS')->not->toContain('staging.clickit-digital.test');
+});
+
 it('rejects every directory when no root is configured', function () {
     config(['previews.allowed_roots' => []]);
 

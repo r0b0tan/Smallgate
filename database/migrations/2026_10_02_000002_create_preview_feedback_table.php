@@ -27,10 +27,10 @@ return new class extends Migration
         DB::statement("ALTER TABLE preview_feedback ADD CONSTRAINT preview_feedback_decision_check
             CHECK (decision IN ('approved', 'changes_requested'))");
 
-        // A comment only belongs to a change request, and stays short enough to
-        // be read rather than archived.
-        DB::statement("ALTER TABLE preview_feedback ADD CONSTRAINT preview_feedback_comment_check
-            CHECK (comment IS NULL OR (decision = 'changes_requested' AND char_length(comment) <= 2000))");
+        // A comment is optional with either answer, and stays short enough to be
+        // read rather than archived.
+        DB::statement('ALTER TABLE preview_feedback ADD CONSTRAINT preview_feedback_comment_check
+            CHECK (comment IS NULL OR char_length(comment) <= 2000)');
 
         DB::statement('ALTER TABLE preview_feedback ADD CONSTRAINT preview_feedback_version_check
             CHECK (preview_version >= 1)');

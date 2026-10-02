@@ -2,118 +2,84 @@
 
 /* Fonts are bundled from npm, never fetched from a CDN. */
 @import '@fontsource-variable/inter';
-@import '@fontsource-variable/doto';
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
 /*
- * Clickit Digital branding, mirrored from the agency site's SCSS variables so
- * the portal and the public site stay recognisably the same product.
+ * One calm light theme for everybody -- sign-in, customer portal and the
+ * administration alike. Many customers are not technical, some read on an
+ * older phone in daylight. Every text colour below clears WCAG AA on white
+ * and on the paper ground.
  */
 @theme {
     --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
-    --font-display: 'Doto Variable', 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
 
-    --color-ground: #050505;
-    --color-surface: #111111;
-    --color-surface-raised: #181818;
-    --color-accent: #ccff00;
-    --color-accent-soft: #e2ff66;
+    --color-paper: #f3f5f8;
+    --color-rail: #eef1f5;
+    --color-ink: #1e2a38;        /* ~14:1 */
+    --color-ink-muted: #556270;  /* ~6.2:1 */
+    --color-line: #e1e6ec;
+    --color-brand: #2f4560;      /* navy, white on it ~9.8:1 */
+    --color-brand-dark: #22344a;
+    --color-brand-soft: #e7edf4;
+    --color-brand-tint: #f4f7fa;
+    --color-quiet: #6b7682;      /* the grey second choice, white on it ~4.6:1 */
+    --color-quiet-dark: #58626d;
 
-    /*
-     * The customer-facing pages (portal, sign-in, invitation) use a calm light
-     * theme instead: many customers are not technical, some read on an older
-     * phone in daylight. Every text colour below clears WCAG AA on white and
-     * on the paper ground.
-     */
-    --color-paper: #f4f6f5;
-    --color-ink: #17212b;        /* ~16:1 */
-    --color-ink-muted: #4b5866;  /* ~7.2:1 */
-    --color-line: #dfe5e2;
-    --color-brand: #1d6b5c;      /* ~6.3:1, white on it ~6.3:1 */
-    --color-brand-dark: #154f44;
-    --color-brand-soft: #e6f2ee;
-    --color-brand-tint: #f2f8f6;
-
-    /* Layered, soft elevation instead of a hard border. */
-    --shadow-card: 0 1px 2px rgb(16 24 32 / 0.04), 0 12px 32px -12px rgb(16 24 32 / 0.12);
-    --shadow-lift: 0 2px 4px rgb(16 24 32 / 0.06), 0 20px 40px -16px rgb(16 24 32 / 0.22);
+    --shadow-card: 0 1px 2px rgb(16 24 32 / 0.04), 0 6px 20px -12px rgb(16 24 32 / 0.12);
+    --shadow-lift: 0 2px 4px rgb(16 24 32 / 0.06), 0 16px 32px -16px rgb(16 24 32 / 0.24);
 }
 
 @layer base {
     html {
-        color-scheme: dark;
+        color-scheme: light;
     }
 
     body {
-        background-color: var(--color-ground);
-        color: rgb(255 255 255 / 0.72);
+        background:
+            radial-gradient(56rem 28rem at 100% -6rem, rgb(255 255 255 / 0.9), transparent 70%),
+            var(--color-paper);
+        background-repeat: no-repeat;
+        color: var(--color-ink);
         -webkit-font-smoothing: antialiased;
     }
 
     h1, h2, h3, h4 {
-        color: #ffffff;
+        color: var(--color-ink);
         letter-spacing: -0.01em;
     }
 
     /* Visible keyboard focus everywhere -- the portal is operable without a mouse. */
     :focus-visible {
-        outline: 2px solid var(--color-accent);
+        outline: 2px solid var(--color-brand);
         outline-offset: 2px;
     }
 
-    html.theme-light {
-        color-scheme: light;
-    }
-
-    .theme-light body {
-        /* A faint brand glow at the top -- depth without decoration. */
-        background:
-            radial-gradient(60rem 28rem at 15% -8rem, rgb(29 107 92 / 0.10), transparent 70%),
-            radial-gradient(48rem 24rem at 95% -6rem, rgb(214 168 76 / 0.08), transparent 70%),
-            var(--color-paper);
-        background-repeat: no-repeat;
-        color: var(--color-ink);
-        font-size: 1.0625rem; /* 17px: comfortable for every age */
-    }
-
-    .theme-light :is(h1, h2, h3, h4) {
-        color: var(--color-ink);
-    }
-
-    .theme-light :focus-visible {
-        outline: 3px solid var(--color-brand);
-        outline-offset: 3px;
+    /* The account menu is a <details>; its marker is drawn by the layout. */
+    summary::-webkit-details-marker {
+        display: none;
     }
 }
 
 @layer components {
     .sg-field {
-        @apply block w-full rounded-lg border-0 bg-white/5 px-3 py-2 text-white
-               ring-1 ring-inset ring-white/10 placeholder:text-white/45
-               focus:ring-2 focus:ring-inset focus:ring-accent sm:text-sm;
+        @apply block w-full rounded-md border-0 bg-white px-3.5 py-2.5 text-base text-ink
+               ring-1 ring-inset ring-line placeholder:text-ink-muted/80
+               focus:ring-2 focus:ring-inset focus:ring-brand;
     }
 
     .sg-label {
-        @apply block text-sm font-medium text-white/80;
+        @apply block text-sm font-semibold text-ink;
     }
 
-    /*
-     * Two muted text levels, and no others. Both clear WCAG AA (4.5:1) on the
-     * near-black ground -- white at 35% or 40% opacity does not, which is what
-     * most of the secondary text used to be.
-     */
-    .sg-muted {
-        @apply text-white/60; /* ~7.3:1 -- labels, secondary text */
-    }
-
+    /* Two names for historical reasons, one colour: both clear AA on white. */
+    .sg-muted,
     .sg-faint {
-        @apply text-white/50; /* ~5.3:1 -- the floor, for incidental text */
+        @apply text-ink-muted;
     }
 
     .sg-card {
-        @apply rounded-xl bg-surface p-6 ring-1 ring-white/5;
+        @apply rounded-lg bg-white p-6 shadow-card ring-1 ring-line;
     }
 
     /*
@@ -123,143 +89,80 @@
     .sg-btn,
     .sg-btn-primary,
     .sg-btn-secondary,
+    .sg-btn-quiet,
     .sg-btn-danger {
-        @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2
-               text-sm font-semibold transition-colors focus-visible:outline-none;
+        @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-md px-4 text-sm
+               font-semibold transition-colors;
     }
 
     .sg-btn-primary {
-        @apply bg-accent text-ground hover:bg-accent-soft;
+        @apply bg-brand text-white hover:bg-brand-dark;
+    }
+
+    /* The grey button: an equal choice next to the primary one, not a cancel. */
+    .sg-btn-quiet {
+        @apply bg-quiet text-white hover:bg-quiet-dark;
     }
 
     .sg-btn-secondary {
-        @apply bg-white/5 text-white ring-1 ring-inset ring-white/10 hover:bg-white/10;
+        @apply bg-white text-ink ring-1 ring-inset ring-line hover:bg-brand-tint;
     }
 
     .sg-btn-danger {
-        @apply bg-red-500/10 text-red-300 ring-1 ring-inset ring-red-500/30 hover:bg-red-500/20;
+        @apply bg-white text-red-700 ring-1 ring-inset ring-red-200 hover:bg-red-50;
     }
 
     .sg-badge {
-        @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs
-               font-medium ring-1 ring-inset;
+        @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs
+               font-semibold ring-1 ring-inset;
     }
 
     .sg-link {
-        @apply text-accent hover:text-accent-soft;
-    }
-
-    .sg-error {
-        @apply text-red-300;
-    }
-
-    .sg-required {
-        @apply text-accent;
-    }
-
-    .sg-value {
-        @apply text-white/70;
-    }
-
-    .sg-divider {
-        @apply border-white/5;
-    }
-
-    .sg-alert-status {
-        @apply rounded-lg bg-accent/10 px-4 py-3 text-sm text-accent ring-1 ring-inset ring-accent/30;
-    }
-
-    .sg-alert-error {
-        @apply rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-300 ring-1 ring-inset ring-red-500/30;
-    }
-
-    .sg-alert-notice {
-        @apply rounded-lg bg-amber-400/10 px-4 py-3 text-sm text-amber-200 ring-1 ring-inset ring-amber-400/30;
-    }
-
-    /* ---------------------------------------------------------- light theme */
-
-    .theme-light .sg-card {
-        @apply rounded-3xl bg-white shadow-card ring-ink/5;
-    }
-
-    .theme-light .sg-field {
-        @apply bg-white px-4 py-3 text-base text-ink ring-line placeholder:text-ink-muted/70
-               focus:ring-brand;
-    }
-
-    .theme-light .sg-label {
-        @apply text-base font-semibold text-ink;
-    }
-
-    .theme-light .sg-muted {
-        @apply text-ink-muted;
-    }
-
-    .theme-light .sg-faint {
-        @apply text-ink-muted;
-    }
-
-    .theme-light .sg-link {
         @apply font-semibold text-brand underline-offset-4 hover:text-brand-dark hover:underline;
     }
 
-    .theme-light .sg-error {
+    .sg-error {
         @apply text-red-700;
     }
 
-    .theme-light .sg-required {
-        @apply text-brand;
+    .sg-required {
+        @apply text-red-700;
     }
 
-    .theme-light .sg-value {
+    .sg-value {
         @apply text-ink;
     }
 
-    .theme-light .sg-divider {
+    .sg-divider {
         @apply border-line;
     }
 
-    .theme-light .sg-alert-status {
-        @apply rounded-xl bg-brand-soft px-5 py-4 text-base text-brand-dark ring-brand/30;
+    .sg-alert-status {
+        @apply rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-900 ring-1 ring-inset ring-emerald-200;
     }
 
-    .theme-light .sg-alert-error {
-        @apply rounded-xl bg-red-50 px-5 py-4 text-base text-red-800 ring-red-200;
+    .sg-alert-error {
+        @apply rounded-md bg-red-50 px-4 py-3 text-sm text-red-800 ring-1 ring-inset ring-red-200;
     }
 
-    .theme-light .sg-alert-notice {
-        @apply rounded-xl bg-amber-50 px-5 py-4 text-base text-amber-900 ring-amber-200;
-    }
-
-    .theme-light .sg-btn-primary {
-        @apply min-h-12 rounded-xl bg-brand px-6 text-base text-white hover:bg-brand-dark;
-    }
-
-    .theme-light .sg-btn-secondary {
-        @apply min-h-12 rounded-xl bg-white px-5 text-base text-brand ring-line hover:bg-brand-soft;
-    }
-
-    /* The one big button on a draft card: unmistakably the thing to press. */
-    .sg-btn-cta {
-        @apply inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-brand px-7
-               text-lg font-semibold text-white shadow-lg shadow-brand/20 transition
-               hover:bg-brand-dark active:scale-[0.98] sm:w-auto;
-    }
-
-    /* "Passt so" / "Änderung wünschen": two equal tiles, icon plus a short
-       line saying what happens -- neither looks like the default. */
-    .sg-choice {
-        @apply flex min-h-20 w-full items-center gap-4 rounded-2xl bg-white p-4 text-left ring-1 ring-inset
-               ring-line transition hover:-translate-y-0.5 hover:shadow-card hover:ring-brand/40
-               active:translate-y-0;
-    }
-
-    .sg-chip {
-        @apply inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold ring-1 ring-inset;
+    .sg-alert-notice {
+        @apply rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-inset ring-amber-200;
     }
 
     .sg-eyebrow {
-        @apply text-sm font-semibold uppercase tracking-[0.08em] text-ink-muted;
+        @apply text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted;
+    }
+
+    /* Admin tables: one look for every list. */
+    .sg-table {
+        @apply min-w-full divide-y divide-line text-sm;
+    }
+
+    .sg-table thead {
+        @apply bg-brand-tint text-left text-xs uppercase tracking-wide text-ink-muted;
+    }
+
+    .sg-table tbody {
+        @apply divide-y divide-line bg-white;
     }
 }

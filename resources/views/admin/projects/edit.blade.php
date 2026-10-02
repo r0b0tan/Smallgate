@@ -2,8 +2,8 @@
 
 @section('title', 'Projekt bearbeiten')
 @section('breadcrumb')
-    <a href="{{ route('admin.projects.index') }}" class="hover:text-white">Projekte</a> /
-    <a href="{{ route('admin.projects.show', $project) }}" class="hover:text-white">{{ $project->name }}</a>
+    <a href="{{ route('admin.projects.index') }}" class="hover:text-ink">Projekte</a> /
+    <a href="{{ route('admin.projects.show', $project) }}" class="hover:text-ink">{{ $project->name }}</a>
 @endsection
 @section('header', 'Projekt bearbeiten')
 

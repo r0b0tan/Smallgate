@@ -3,7 +3,7 @@
 @section('title', 'Passwort zurücksetzen')
 
 @section('card')
-    <h1 class="text-2xl font-bold">Neues Passwort vergeben</h1>
+    <h1 class="text-2xl font-semibold tracking-tight">Neues Passwort vergeben</h1>
 
     <div class="mt-5"><x-errors /></div>
 
@@ -20,6 +20,6 @@
         <x-field name="password_confirmation" label="Neues Passwort wiederholen" type="password" required
                  autocomplete="new-password" />
 
-        <button type="submit" class="sg-btn-primary w-full">Passwort speichern</button>
+        <button type="submit" class="sg-btn-primary min-h-12 w-full text-base">Passwort speichern</button>
     </form>
 @endsection

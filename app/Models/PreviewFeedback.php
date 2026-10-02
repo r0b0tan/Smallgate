@@ -6,7 +6,9 @@ use App\Enums\FeedbackDecision;
 use App\Policies\PreviewFeedbackPolicy;
 use Database\Factories\PreviewFeedbackFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -50,6 +52,18 @@ class PreviewFeedback extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Restrict a query to feedback on previews the user may see -- the answers
+     * of everybody at the same customer, never those of another customer.
+     *
+     * @param  Builder<PreviewFeedback>  $query
+     */
+    #[Scope]
+    protected function visibleTo(Builder $query, User $user): void
+    {
+        $query->whereHas('preview', fn (Builder $preview) => $preview->visibleTo($user));
     }
 
     public function setCommentAttribute(?string $value): void

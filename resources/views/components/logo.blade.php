@@ -1,11 +1,26 @@
-{{-- The portal's mark: a gate as a rounded square. Inline SVG, nothing fetched. --}}
+@props(['mark' => true, 'wordmark' => true])
+
+{{-- The portal's mark: an "S" on a navy square, optionally followed by the
+     name. Inline, nothing fetched. --}}
+@php
+    $name = (string) config('app.name');
+    // The product name is set in two weights; any other name stays as it is.
+    $split = strcasecmp($name, 'Smallgate') === 0;
+@endphp
+
 <span {{ $attributes->merge(['class' => 'inline-flex items-center gap-3']) }}>
-    <span class="flex size-10 items-center justify-center rounded-xl bg-brand text-white" aria-hidden="true">
-        <svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="1.8"
-             stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="6" width="16" height="14" rx="2"/>
-            <path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6"/>
-        </svg>
-    </span>
-    <span class="text-xl font-bold tracking-tight text-ink">{{ config('app.name') }}</span>
+    @if ($mark)
+        <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-brand text-lg font-extrabold
+                     italic text-white" aria-hidden="true">S</span>
+    @endif
+
+    @if ($wordmark)
+        <span class="text-lg uppercase tracking-[0.06em] text-ink">
+            @if ($split)
+                <span class="font-bold">Small</span><span class="font-normal text-ink-muted">gate</span>
+            @else
+                <span class="font-bold">{{ $name }}</span>
+            @endif
+        </span>
+    @endif
 </span>

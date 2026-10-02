@@ -2,7 +2,7 @@
 
 @section('title', $customer->name)
 @section('breadcrumb')
-    <a href="{{ route('admin.customers.index') }}" class="hover:text-white">Kunden</a>
+    <a href="{{ route('admin.customers.index') }}" class="hover:text-ink">Kunden</a>
 @endsection
 @section('header', $customer->name)
 @section('subheader', $customer->is_active ? 'Aktiver Kunde' : 'Deaktivierter Kunde')
@@ -18,29 +18,29 @@
 @section('content')
     <div class="grid gap-6 lg:grid-cols-3">
         <div class="sg-card lg:col-span-1">
-            <h2 class="text-lg font-semibold text-white">Stammdaten</h2>
+            <h2 class="text-lg font-semibold">Stammdaten</h2>
             <dl class="mt-4 space-y-3 text-sm">
                 <div>
                     <dt class="sg-muted">Kürzel</dt>
-                    <dd class="font-mono text-xs text-white/70">{{ $customer->slug }}</dd>
+                    <dd class="font-mono text-xs text-ink">{{ $customer->slug }}</dd>
                 </div>
                 <div>
                     <dt class="sg-muted">Kontakt-E-Mail</dt>
-                    <dd class="text-white/70">{{ $customer->contact_email ?? '–' }}</dd>
+                    <dd class="text-ink">{{ $customer->contact_email ?? '–' }}</dd>
                 </div>
                 <div>
                     <dt class="sg-muted">Zugänge</dt>
-                    <dd class="text-white/70">{{ $users->count() }}</dd>
+                    <dd class="text-ink">{{ $users->count() }}</dd>
                 </div>
                 <div>
                     <dt class="sg-muted">Angelegt</dt>
-                    <dd class="text-white/70">{{ $customer->created_at->format('d.m.Y') }}</dd>
+                    <dd class="text-ink">{{ $customer->created_at->format('d.m.Y') }}</dd>
                 </div>
             </dl>
         </div>
 
         <div class="sg-card lg:col-span-2">
-            <h2 class="text-lg font-semibold text-white">Projekte</h2>
+            <h2 class="text-lg font-semibold">Projekte</h2>
 
             @if ($customer->projects->isEmpty())
                 <div class="mt-4">
@@ -50,12 +50,12 @@
                     </x-empty>
                 </div>
             @else
-                <ul class="mt-4 divide-y divide-white/5">
+                <ul class="mt-4 divide-y divide-line">
                     @foreach ($customer->projects as $project)
                         <li class="flex items-center justify-between gap-4 py-3">
                             <div class="min-w-0">
                                 <a href="{{ route('admin.projects.show', $project) }}"
-                                   class="block truncate text-sm font-medium text-white hover:text-accent">
+                                   class="block truncate text-sm font-medium text-ink hover:text-brand">
                                     {{ $project->name }}
                                 </a>
                                 <p class="truncate font-mono text-xs sg-faint">{{ $project->slug }}</p>

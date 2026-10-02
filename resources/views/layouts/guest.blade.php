@@ -1,25 +1,33 @@
 @extends('layouts.base')
 
-{{-- Sign-in, invitation and password pages are the first thing a customer
-     sees, so they share the portal's calm light theme. --}}
-@section('theme', 'theme-light')
+{{-- Sign-in, invitation, password and legal pages: the first thing a customer
+     sees, in the same look as the portal behind it. --}}
 
 @section('body')
-    <div class="flex min-h-full flex-col justify-center px-4 py-12 sm:px-6 lg:px-8">
-        <div class="mx-auto w-full max-w-md">
-            <a href="{{ route('home') }}" class="flex justify-center">
-                <x-logo />
-            </a>
-            <p class="mt-3 text-center text-base sg-muted">Ihr persönlicher Kundenbereich</p>
-
-            <div class="mt-8 sg-card p-6 sm:p-8">
-                @yield('card')
+    <div class="flex min-h-full flex-col">
+        <header class="border-b border-line bg-white/80">
+            <div class="mx-auto flex h-16 max-w-6xl items-center px-4 sm:px-6">
+                <a href="{{ route('home') }}" aria-label="{{ config('app.name') }} – zur Startseite">
+                    <x-logo />
+                </a>
             </div>
+        </header>
 
-            <div class="mt-6 flex justify-center gap-6 text-sm sg-muted">
-                <a class="hover:underline" href="{{ route('legal.imprint') }}">Impressum</a>
-                <a class="hover:underline" href="{{ route('legal.privacy') }}">Datenschutz</a>
+        <main class="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6">
+            <div class="mx-auto w-full max-w-md">
+                <p class="sg-eyebrow text-center">Ihr persönlicher Kundenbereich</p>
+
+                <div class="mt-4 sg-card p-6 sm:p-8">
+                    @yield('card')
+                </div>
             </div>
-        </div>
+        </main>
+
+        <footer class="px-4 pb-8">
+            <div class="flex justify-center gap-6 text-sm sg-muted">
+                <a class="hover:text-ink hover:underline" href="{{ route('legal.imprint') }}">Impressum</a>
+                <a class="hover:text-ink hover:underline" href="{{ route('legal.privacy') }}">Datenschutz</a>
+            </div>
+        </footer>
     </div>
 @endsection

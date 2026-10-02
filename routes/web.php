@@ -150,6 +150,7 @@ Route::middleware('auth')
     ->name('portal.')
     ->group(function () {
         Route::get('/', Portal\DashboardController::class)->name('dashboard');
+        Route::get('nachrichten', [Portal\FeedbackController::class, 'index'])->name('feedback.index');
         Route::get('projekte/{project}', [Portal\ProjectController::class, 'show'])->name('projects.show');
         Route::get('projekte/{project}/vorschauen/{preview}', [Portal\ProjectController::class, 'showPreview'])
             ->name('previews.show');

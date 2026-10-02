@@ -1,137 +1,110 @@
-@extends('layouts.portal')
+@extends('layouts.app')
 
-{{-- The customer's one page. It opens with a verdict -- is something waiting
-     for me? -- then every draft as a card, unanswered ones first, then the
-     projects that have nothing to show yet, then help. --}}
+{{-- The customer's one page: per project its status and every draft, the one
+     waiting for an answer first, and beside it the last few answers. --}}
 
-@section('title', 'Ihre Entwürfe')
+@section('title', 'Ihr Projektstatus')
 
 @php
-    $now = now(config('smallgate.display_timezone'))->locale('de');
-    $salutation = match (true) {
-        $now->hour >= 5 && $now->hour < 11 => 'Guten Morgen',
-        $now->hour >= 11 && $now->hour < 18 => 'Guten Tag',
-        default => 'Guten Abend',
-    };
+    $tz = config('smallgate.display_timezone');
 
-    $previews = $projects
-        ->flatMap(fn ($project) => $project->previews->each(fn ($preview) => $preview->setRelation('project', $project)))
-        ->sortBy([
-            fn ($a, $b) => $b->awaitsFeedback() <=> $a->awaitsFeedback(),
-            fn ($a, $b) => $b->lastUpdatedAt() <=> $a->lastUpdatedAt(),
-        ])
-        ->values();
+    foreach ($projects as $project) {
+        $project->setRelation('previews', $project->previews
+            ->each(fn ($preview) => $preview->setRelation('project', $project))
+            ->sortBy([
+                fn ($a, $b) => $b->awaitsFeedback() <=> $a->awaitsFeedback(),
+                fn ($a, $b) => $b->lastUpdatedAt() <=> $a->lastUpdatedAt(),
+            ])
+            ->values());
+    }
 
-    $newCount = $previews->filter(fn ($preview) => $preview->awaitsFeedback())->count();
-    $withoutDraft = $projects->filter(fn ($project) => $project->previews->isEmpty());
+    // Something to answer first, then something to look at, then the rest.
+    $projects = $projects->sortBy([
+        fn ($a, $b) => $b->previews->filter->awaitsFeedback()->count() <=> $a->previews->filter->awaitsFeedback()->count(),
+        fn ($a, $b) => $b->previews->isNotEmpty() <=> $a->previews->isNotEmpty(),
+        fn ($a, $b) => $b->previews->max(fn ($preview) => $preview->lastUpdatedAt()) <=> $a->previews->max(fn ($preview) => $preview->lastUpdatedAt()),
+    ])->values();
+
+    $previews = $projects->flatMap->previews;
+    $newCount = $previews->filter->awaitsFeedback()->count();
+    $offeredIds = $previews->pluck('id')->all();
 @endphp
 
 @section('content')
-    <section class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-        <div>
-            <p class="text-base font-medium text-brand">{{ $now->isoFormat('dddd, D. MMMM') }}</p>
-            <h1 class="mt-1 text-4xl font-semibold tracking-tight sm:text-5xl">{{ $salutation }}</h1>
-            <p class="mt-3 max-w-xl text-lg sg-muted">
-                Hier sehen Sie Ihre Entwürfe und sagen uns mit einem Klick, was Sie davon halten.
-            </p>
-        </div>
-
-        {{-- The verdict: the one thing to know before reading anything else. --}}
-        @if ($newCount > 0)
-            <div class="flex items-center gap-4 rounded-2xl bg-amber-50 px-5 py-4 ring-1 ring-amber-200/80" role="status">
-                <span class="relative flex size-12 shrink-0 items-center justify-center rounded-full bg-amber-400
-                             text-xl font-bold text-amber-950">
-                    <span class="absolute inset-0 animate-ping rounded-full bg-amber-400 opacity-30 motion-reduce:hidden"></span>
-                    <span class="relative">{{ $newCount }}</span>
-                </span>
-                <div>
-                    <p class="text-lg font-semibold text-amber-950">
-                        {{ $newCount === 1 ? 'Ein Entwurf wartet auf Ihre Meinung' : $newCount.' Entwürfe warten auf Ihre Meinung' }}
-                    </p>
-                    <p class="text-base text-amber-900/80">Dauert nur ein paar Minuten.</p>
-                </div>
-            </div>
-        @elseif ($previews->isNotEmpty())
-            <div class="flex items-center gap-4 rounded-2xl bg-brand-soft px-5 py-4 ring-1 ring-brand/15" role="status">
-                <span class="flex size-12 shrink-0 items-center justify-center rounded-full bg-brand text-white">
-                    <x-icon name="check" class="size-6" />
-                </span>
-                <div>
-                    <p class="text-lg font-semibold text-brand-dark">Alles erledigt – vielen Dank!</p>
-                    <p class="text-base text-brand-dark/80">Wir melden uns, sobald es Neues gibt.</p>
-                </div>
-            </div>
-        @endif
-    </section>
-
-    @if ($previews->isNotEmpty())
-        <h2 class="mt-12 text-xl font-semibold tracking-tight sm:mt-14">
-            Ihre Entwürfe <span class="font-normal sg-muted">({{ $previews->count() }})</span>
-        </h2>
-
-        <div class="mt-5 space-y-6">
-            @foreach ($previews as $preview)
-                @include('portal._draft-card', ['preview' => $preview, 'project' => $preview->project])
-            @endforeach
-        </div>
-    @endif
-
-    @if ($withoutDraft->isNotEmpty())
-        <h2 class="mt-12 text-xl font-semibold tracking-tight">
-            {{ $previews->isEmpty() ? 'Ihre Projekte' : 'Weitere Projekte' }}
-        </h2>
-
-        <ul class="mt-5 divide-y divide-line overflow-hidden sg-card p-0">
-            @foreach ($withoutDraft as $project)
-                @php($done = in_array($project->status, [\App\Enums\ProjectStatus::Completed, \App\Enums\ProjectStatus::Archived], true))
-                <li class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-5 py-4 sm:px-6">
-                    <span class="flex items-center gap-3 text-lg font-semibold">
-                        <span class="flex size-10 items-center justify-center rounded-xl bg-paper text-ink-muted">
-                            <x-icon name="folder" />
-                        </span>
-                        {{ $project->name }}
-                    </span>
-                    <span class="flex items-center gap-2 text-base sg-muted">
-                        <x-icon :name="$done ? 'check' : 'clock'" class="size-5 {{ $done ? 'text-brand' : '' }}" />
-                        {{ $done ? 'Abgeschlossen' : 'In Arbeit – wir schreiben Ihnen, sobald es etwas zu sehen gibt' }}
-                    </span>
-                </li>
-            @endforeach
-        </ul>
-    @endif
+    <x-errors />
 
     @if ($projects->isEmpty())
-        <div class="mt-12 sg-card p-10 text-center">
-            <span class="mx-auto flex size-14 items-center justify-center rounded-2xl bg-brand-soft text-brand">
-                <x-icon name="clock" class="size-7" />
-            </span>
-            <p class="mt-4 text-lg font-semibold">Gerade ist nichts für Sie freigegeben.</p>
-            <p class="mt-1 text-base sg-muted">Wir schreiben Ihnen eine E-Mail, sobald es etwas zu sehen gibt.</p>
+        <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">Ihr Projektstatus</h1>
+
+        <div class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+            <div class="sg-card px-6 py-12 text-center">
+                <span class="mx-auto flex size-12 items-center justify-center rounded-md bg-brand-soft text-brand">
+                    <x-icon name="clock" class="size-6" />
+                </span>
+                <p class="mt-4 text-lg font-semibold">Gerade ist nichts für Sie freigegeben.</p>
+                <p class="mt-1 sg-muted">Wir schreiben Ihnen eine E-Mail, sobald es etwas zu sehen gibt.</p>
+            </div>
+
+            @include('portal._recent-feedback')
         </div>
     @endif
 
-    <section class="mt-12 grid gap-4 sm:grid-cols-2">
-        <div class="flex gap-4 rounded-3xl bg-white/60 p-6 ring-1 ring-ink/5">
-            <span class="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand">
-                <x-icon name="message" />
-            </span>
-            <div>
-                <p class="text-lg font-semibold">Was passiert nach Ihrer Antwort?</p>
-                <p class="mt-1 text-base sg-muted">
-                    Wir sehen Ihre Rückmeldung sofort und melden uns per E-Mail, wenn wir etwas ändern.
-                </p>
+    @foreach ($projects as $project)
+        <section @class(['mt-14' => ! $loop->first]) aria-labelledby="projekt-{{ $project->id }}">
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <h1 id="projekt-{{ $project->id }}" class="text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
+                    Ihr Projektstatus
+                    <span class="mx-1.5 font-normal text-ink-muted" aria-hidden="true">/</span>
+                    <span class="sr-only">:</span>
+                    {{ $project->name }}
+                </h1>
+                <span class="sg-badge {{ $project->status->badgeClasses() }}">
+                    <span class="size-1.5 rounded-full bg-current" aria-hidden="true"></span>
+                    {{ $project->status->label() }}
+                </span>
             </div>
-        </div>
-        <div class="flex gap-4 rounded-3xl bg-white/60 p-6 ring-1 ring-ink/5">
-            <span class="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand">
-                <x-icon name="mail" />
-            </span>
-            <div>
-                <p class="text-lg font-semibold">Fragen?</p>
-                <p class="mt-1 text-base sg-muted">
-                    Antworten Sie einfach auf unsere E-Mail – wir helfen gern weiter.
+
+            {{-- The verdict, when there is something to do: the one thing to
+                 know before reading anything else. --}}
+            @if ($loop->first && $newCount > 1)
+                <p class="mt-3 flex items-center gap-2 text-base font-medium text-amber-900" role="status">
+                    <span class="size-2 rounded-full bg-amber-500" aria-hidden="true"></span>
+                    {{ $newCount }} Entwürfe warten auf Ihre Meinung
                 </p>
+            @elseif ($loop->first && $newCount === 1)
+                <p class="mt-3 flex items-center gap-2 text-base font-medium text-amber-900" role="status">
+                    <span class="size-2 rounded-full bg-amber-500" aria-hidden="true"></span>
+                    Ein Entwurf wartet auf Ihre Meinung
+                </p>
+            @elseif ($loop->first && $previews->isNotEmpty())
+                <p class="mt-3 flex items-center gap-2 text-base font-medium text-emerald-800" role="status">
+                    <x-icon name="check" class="size-4" />
+                    Alles erledigt – vielen Dank! Wir melden uns, sobald es Neues gibt.
+                </p>
+            @endif
+
+            <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start xl:grid-cols-[minmax(0,1fr)_22rem]">
+                <div class="space-y-6">
+                    @forelse ($project->previews as $preview)
+                        @include('portal._draft-card', ['preview' => $preview, 'project' => $project, 'current' => $loop->first])
+                    @empty
+                        @php($done = in_array($project->status, [\App\Enums\ProjectStatus::Completed, \App\Enums\ProjectStatus::Archived], true))
+                        <div class="sg-card flex items-center gap-4">
+                            <span class="flex size-11 shrink-0 items-center justify-center rounded-md bg-brand-soft text-brand">
+                                <x-icon :name="$done ? 'check' : 'clock'" />
+                            </span>
+                            <p class="sg-muted">
+                                {{ $done ? 'Abgeschlossen – vielen Dank für die Zusammenarbeit.' : 'In Arbeit – wir schreiben Ihnen, sobald es etwas zu sehen gibt.' }}
+                            </p>
+                        </div>
+                    @endforelse
+                </div>
+
+                {{-- Once per page, beside the first project. --}}
+                @if ($loop->first)
+                    @include('portal._recent-feedback')
+                @endif
             </div>
-        </div>
-    </section>
+        </section>
+    @endforeach
 @endsection
