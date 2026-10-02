@@ -1,47 +1,109 @@
-@extends('layouts.guest')
+@extends('layouts.base')
 
 @section('title', 'Anmelden')
 
-@section('card')
-    <h1 class="text-2xl font-semibold tracking-tight">Willkommen</h1>
-    <p class="mt-2 text-base sg-muted">
-        Bitte melden Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort an.
-    </p>
+{{-- The sign-in page has its own split card instead of the guest layout: the
+     brand panel on the left carries the logo, the form sits on the right. --}}
+@php
+    $contactEmail = (string) config('smallgate.contact_email');
+@endphp
 
-    {{-- One generic error for wrong password, unknown address and blocked
-         account alike -- the form is not an account enumeration oracle. --}}
-    @error('email')
-        <div class="mt-5 sg-alert-error" role="alert">
-            {{ $message }}
-        </div>
-    @enderror
+@section('body')
+    <div class="sg-login-ground flex min-h-full flex-col items-center justify-center px-4 py-10 sm:px-6">
+        <main class="w-full max-w-3xl">
+            <div class="sg-login-card md:grid md:grid-cols-[39fr_61fr]">
+                <div class="sg-login-panel relative overflow-hidden px-6 py-8 text-white sm:px-14 sm:py-10 md:pt-14 md:pb-48">
+                    <x-logo-mark class="h-14 w-auto text-sky" />
 
-    <form method="POST" action="{{ route('login') }}" class="mt-6 space-y-5">
-        @csrf
+                    <p class="mt-4 text-[1.75rem] leading-none uppercase tracking-[0.02em]">
+                        <span class="font-bold text-white">Small</span><span class="font-semibold text-slate-accent">gate</span>
+                    </p>
 
-        <x-field name="email" label="E-Mail-Adresse" type="email" required
-                 autocomplete="username" />
+                    <p class="mt-6 text-lg leading-snug text-slate-text">
+                        Entwürfe ansehen.<br>
+                        Rückmeldung geben.
+                    </p>
 
-        <x-field name="password" label="Passwort" type="password" required
-                 autocomplete="current-password" />
+                    <x-brand-watermark class="pointer-events-none absolute bottom-0 left-0 hidden w-full md:block" />
+                </div>
 
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <label class="flex items-center gap-3 text-base sg-muted">
-                <input type="checkbox" name="remember" value="1"
-                       class="size-5 rounded border-line accent-brand">
-                Angemeldet bleiben
-            </label>
+                <div class="px-6 py-10 sm:px-16 sm:pt-14 sm:pb-11">
+                    <h1 class="text-3xl font-bold tracking-tight">Anmelden</h1>
+                    <p class="mt-3 text-base sg-muted">
+                        Nutzen Sie Ihre Zugangsdaten aus der Einladungs-E-Mail.
+                    </p>
 
-            <a href="{{ route('password.request') }}" class="text-base sg-link">
-                Passwort vergessen?
-            </a>
-        </div>
+                    {{-- One generic error for wrong password, unknown address and blocked
+                         account alike -- the form is not an account enumeration oracle. --}}
+                    @error('email')
+                        <div class="mt-6 sg-alert-error" role="alert">
+                            {{ $message }}
+                        </div>
+                    @enderror
 
-        <button type="submit" class="sg-btn-primary min-h-12 w-full text-base">Anmelden</button>
-    </form>
+                    <form method="POST" action="{{ route('login') }}" class="mt-8">
+                        @csrf
 
-    <p class="mt-6 border-t border-line pt-5 text-sm sg-muted">
-        Fragen? Antworten Sie einfach auf unsere E-Mail.
-        Zugänge werden ausschließlich von uns eingerichtet. Eine Registrierung ist nicht vorgesehen.
-    </p>
+                        <label for="email" class="sg-label">E-Mail-Adresse</label>
+                        <div class="relative mt-2">
+                            <x-icon name="mail" class="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-field-icon" />
+                            <input id="email" name="email" type="email" value="{{ old('email') }}"
+                                   required autocomplete="username"
+                                   placeholder="Ihre E-Mail-Adresse"
+                                   class="sg-login-field pr-3.5">
+                        </div>
+
+                        <label for="password" class="mt-6 sg-label">Passwort</label>
+                        <div class="relative mt-2">
+                            <x-icon name="lock" class="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-field-icon" />
+                            <input id="password" name="password" type="password"
+                                   required autocomplete="current-password"
+                                   placeholder="Ihr Passwort"
+                                   class="sg-login-field pr-12">
+
+                            {{-- Shown by app.js only; without JavaScript the field
+                                 simply stays masked. --}}
+                            <button type="button" hidden data-password-toggle="password"
+                                    aria-controls="password" aria-pressed="false" aria-label="Passwort anzeigen"
+                                    class="absolute top-1/2 right-2 flex size-9 -translate-y-1/2 items-center justify-center rounded-md text-slate hover:bg-brand-tint">
+                                <x-icon name="eye" data-show />
+                                <x-icon name="eye-off" data-hide class="hidden" />
+                            </button>
+                        </div>
+                        @error('password')
+                            <p class="mt-1 text-sm sg-error">{{ $message }}</p>
+                        @enderror
+
+                        <div class="mt-3 text-right">
+                            <a href="{{ route('password.request') }}"
+                               class="text-sm font-semibold text-link underline underline-offset-4 hover:text-brand-dark">
+                                Passwort vergessen?
+                            </a>
+                        </div>
+
+                        <button type="submit" class="mt-6 sg-btn-primary min-h-12 w-full rounded-lg text-base">
+                            <x-icon name="login" />
+                            Anmelden
+                        </button>
+                    </form>
+
+                    {{-- There is no self-registration: accounts only come by invitation. --}}
+                    @if ($contactEmail !== '')
+                        <p class="mt-7 border-t border-line-soft pt-5 text-center text-sm sg-muted">
+                            Probleme beim Zugang?
+                            <a href="mailto:{{ $contactEmail }}?subject={{ rawurlencode('Probleme beim Zugang') }}"
+                               class="font-semibold text-link hover:underline underline-offset-4">Kontakt aufnehmen</a>
+                        </p>
+                    @endif
+                </div>
+            </div>
+
+            <footer class="mt-6 flex justify-center gap-6 text-sm sg-muted">
+                <a class="hover:text-ink hover:underline" href="{{ route('legal.imprint') }}">Impressum</a>
+                <a class="hover:text-ink hover:underline" href="{{ route('legal.privacy') }}">Datenschutz</a>
+            </footer>
+        </main>
+
+        <x-flash class="bottom-6" />
+    </div>
 @endsection

@@ -199,3 +199,21 @@ it('logs out and invalidates the session', function () {
 
     $this->assertGuest();
 });
+
+it('offers a contact mail on the login page when an address is configured', function () {
+    config(['smallgate.contact_email' => 'hallo@clickit.test']);
+
+    $this->get('/login')
+        ->assertOk()
+        ->assertSee('Probleme beim Zugang?')
+        ->assertSee('mailto:hallo@clickit.test', escape: false);
+});
+
+it('leaves the contact line out without a configured address', function () {
+    config(['smallgate.contact_email' => '']);
+
+    $this->get('/login')
+        ->assertOk()
+        ->assertDontSee('Probleme beim Zugang?')
+        ->assertDontSee('mailto:', escape: false);
+});

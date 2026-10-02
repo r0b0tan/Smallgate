@@ -26,7 +26,18 @@
     --color-quiet: #6b7682;      /* the grey second choice, white on it ~4.6:1 */
     --color-quiet-dark: #58626d;
 
-    --shadow-card: 0 1px 2px rgb(16 24 32 / 0.04), 0 6px 20px -12px rgb(16 24 32 / 0.12);
+    /* Sign-in page: a slate panel next to the form, on a cool blue-grey ground. */
+    --color-ground: #dee5ee;
+    --color-slate: #364759;
+    --color-slate-text: #dce4ed;  /* ~9:1 on the slate */
+    --color-slate-accent: #b4c3d3;
+    --color-sky: #84b6e3;
+    --color-link: #1f3e60;        /* ~11:1 */
+    --color-line-soft: #dfe4ea;
+    --color-placeholder: #929dad;
+    --color-field-icon: #46586b;
+
+    --shadow-card:0 1px 2px rgb(16 24 32 / 0.04), 0 6px 20px -12px rgb(16 24 32 / 0.12);
     --shadow-lift: 0 2px 4px rgb(16 24 32 / 0.06), 0 16px 32px -16px rgb(16 24 32 / 0.24);
 }
 
@@ -167,6 +178,30 @@
 
     .sg-eyebrow {
         @apply text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted;
+    }
+
+    /* Sign-in page. The faint grid on the ground is pure decoration. */
+    .sg-login-ground {
+        background:
+            radial-gradient(48rem 32rem at 0% 0%, rgb(255 255 255 / 0.35), transparent 70%),
+            linear-gradient(to right, rgb(197 208 221 / 0.35) 1px, transparent 1px) 0 0 / 12.5rem 12.5rem,
+            linear-gradient(to bottom, rgb(197 208 221 / 0.35) 1px, transparent 1px) 0 0 / 12.5rem 12.5rem,
+            var(--color-ground);
+    }
+
+    .sg-login-card {
+        @apply overflow-hidden rounded-xl bg-white;
+        box-shadow: 0 2px 6px rgb(30 45 64 / 0.06), 0 28px 56px -20px rgb(30 45 64 / 0.3);
+    }
+
+    .sg-login-panel {
+        background: linear-gradient(170deg, #43566a 0%, var(--color-slate) 50%, #2c3a49 100%);
+    }
+
+    .sg-login-field {
+        @apply block min-h-12 w-full rounded-lg border-0 bg-white py-3 pl-11 text-base text-ink
+               ring-1 ring-inset ring-line placeholder:text-placeholder
+               focus:ring-2 focus:ring-inset focus:ring-brand;
     }
 
     /* Admin tables: one look for every list. */
