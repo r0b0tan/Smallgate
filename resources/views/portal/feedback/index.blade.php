@@ -33,7 +33,10 @@
     @else
         <ol class="divide-y divide-line overflow-hidden sg-card p-0">
             @foreach ($feedback as $entry)
-                @php($approved = $entry->decision === FeedbackDecision::Approved)
+                @php
+                    $approved = $entry->decision === FeedbackDecision::Approved;
+                    $projectUrl = route('portal.projects.show', $entry->preview->project);
+                @endphp
                 <li class="flex gap-4 px-5 py-5 sm:px-6">
                     <span @class(['mt-0.5', 'text-brand' => $approved, 'text-amber-700' => ! $approved])>
                         <x-icon :name="$approved ? 'check-circle' : 'edit-circle'" class="size-7" />
@@ -42,18 +45,26 @@
                     <div class="min-w-0 flex-1">
                         <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                             <p class="font-semibold">
-                                {{ $approved ? 'Passt so!' : 'Änderung gewünscht' }}
-                                <span class="font-normal sg-muted">zu „{{ $entry->preview->name }}“</span>
+                                {{ $entry->user->name }}
+                                @if ($entry->user_id === auth()->id())
+                                    <span class="font-normal sg-muted">(Sie)</span>
+                                @endif
                             </p>
-                            <time datetime="{{ $entry->created_at->toIso8601String() }}" class="text-sm sg-muted">
+                            <time datetime="{{ $entry->created_at->toIso8601String() }}" class="text-sm text-ink">
                                 {{ $entry->created_at->copy()->timezone($tz)->format('d.m.Y, H:i') }} Uhr
                             </time>
                         </div>
 
-                        <p class="mt-0.5 text-sm sg-muted">
-                            {{ $entry->preview->project->name }}
-                            · Fassung {{ $entry->preview_version }}
-                            · von {{ $entry->user_id === auth()->id() ? 'Ihnen' : $entry->user->name }}
+                        <p class="mt-1 text-sm">
+                            <span @class(['font-medium', 'text-brand' => $approved, 'text-amber-800' => ! $approved])>
+                                {{ $approved ? 'Passt so!' : 'Änderung gewünscht' }}
+                            </span>
+                            <span class="sg-muted">·</span>
+                            <a href="{{ $projectUrl }}" class="sg-link">{{ $entry->preview->project->name }}</a>
+                            <span class="sg-muted" aria-hidden="true">›</span>
+                            {{-- The draft's card on the project page, not the live address. --}}
+                            <a href="{{ $projectUrl }}#entwurf-{{ $entry->preview->id }}" class="sg-link">„{{ $entry->preview->name }}“</a>
+                            <span class="sg-muted">(Fassung {{ $entry->preview_version }})</span>
                         </p>
 
                         @if ($entry->comment)

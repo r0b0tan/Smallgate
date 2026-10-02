@@ -33,9 +33,24 @@ it('lists the answers of everybody at the customer with their notes', function (
 
     $this->actingAs($user)->get(route('portal.feedback.index'))
         ->assertOk()
-        ->assertSeeInOrder(['Passt so!', 'von Ihnen', 'Änderung gewünscht', 'von Petra Schmidt', 'Telefonnummer fehlt.'])
+        ->assertSeeInOrder([$user->name, '(Sie)', 'Passt so!', 'Petra Schmidt', 'Änderung gewünscht', 'Telefonnummer fehlt.'])
         ->assertSee('Startseite')
         ->assertSee('Webseiten-Relaunch');
+});
+
+it('links each answer to its project and to the draft on the project page', function () {
+    $customer = Customer::factory()->create();
+    $user = $this->customerUser($customer);
+    $preview = archivePreview($customer);
+
+    PreviewFeedback::factory()->create(['preview_id' => $preview->id, 'user_id' => $user->id]);
+
+    $projectUrl = route('portal.projects.show', $preview->project);
+
+    $this->actingAs($user)->get(route('portal.feedback.index'))
+        ->assertOk()
+        ->assertSee('href="'.$projectUrl.'"', escape: false)
+        ->assertSee('href="'.$projectUrl.'#entwurf-'.$preview->id.'"', escape: false);
 });
 
 it('pages through a long archive', function () {
