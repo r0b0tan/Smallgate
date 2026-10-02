@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Enums\ActivityAction;
 use App\Http\Controllers\Concerns\RevokesSessions;
 use App\Models\Activity;
+use App\Notifications\EmailChangedNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
@@ -29,6 +32,8 @@ class ProfileController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $user = $request->user();
+        $previousEmail = $user->email;
+        $emailChanged = mb_strtolower(trim((string) $request->string('email'))) !== $previousEmail;
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -36,13 +41,15 @@ class ProfileController extends Controller
                 'required', 'string', 'email', 'max:255',
                 Rule::unique('users', 'email')->ignore($user->id),
             ],
+            // The address is where a password reset goes. Without this, a
+            // hijacked session could redirect it and take the account over for
+            // good -- the same reason the password form asks for it.
+            'email_password' => [Rule::requiredIf($emailChanged), 'nullable', 'string', 'current_password'],
         ]);
-
-        $emailChanged = mb_strtolower($validated['email']) !== $user->email;
 
         // Only name and email -- role, customer and is_active are not fillable
         // and are not part of this form.
-        $user->fill($validated);
+        $user->fill(Arr::only($validated, ['name', 'email']));
 
         if ($emailChanged) {
             $user->email_verified_at = null;
@@ -52,6 +59,12 @@ class ProfileController extends Controller
 
         if ($user->wasChanged()) {
             Activity::record(ActivityAction::ProfileUpdated, actor: $user);
+        }
+
+        // The previous owner of the address learns about the change, so a
+        // takeover does not go unnoticed.
+        if ($user->wasChanged('email')) {
+            Notification::route('mail', $previousEmail)->notify(new EmailChangedNotification($user->name));
         }
 
         return back()->with('status', 'Ihr Profil wurde gespeichert.');

@@ -3,14 +3,21 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeEncrypted;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
  * Password reset mail in the portal's own wording. Sent only to accounts that
  * may actually sign in -- see User::sendPasswordResetNotification().
+ *
+ * Queued on purpose: talking to the mail server inside the request would make
+ * a reset for an existing account measurably slower than one for an unknown
+ * address, and the response time would reveal which addresses have an
+ * account. Encrypted, because the queued payload carries the plaintext token.
  */
-class ResetPasswordNotification extends Notification
+class ResetPasswordNotification extends Notification implements ShouldBeEncrypted, ShouldQueue
 {
     use Queueable;
 

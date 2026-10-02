@@ -339,6 +339,36 @@ it('pins an upstream target to the checked address and passes it on stdin', func
     @unlink($output);
 });
 
+it('starts the browser without the worker\'s secrets', function () {
+    putenv('SMALLGATE_TEST_SECRET=nicht-fuer-den-browser');
+
+    Process::fake(fn () => Process::result(output: '{"ok":false,"error":"timeout"}', exitCode: 1));
+
+    try {
+        app(PreviewScreenshotter::class)->capture(livePreview(), '/tmp/x.jpg');
+    } catch (ThumbnailFailed) {
+        // Only the command line matters here.
+    } finally {
+        putenv('SMALLGATE_TEST_SECRET');
+    }
+
+    Process::assertRan(function (PendingProcess $process) {
+        $command = (array) $process->command;
+        $node = array_search((string) config('previews.thumbnails.node'), $command, true);
+        $inherited = array_slice($command, 2, $node - 2);
+
+        return array_slice($command, 0, 2) === ['env', '-i']
+            // Nothing but the allowlisted names is handed on ...
+            && collect($inherited)->every(fn (string $pair) => in_array(
+                Str::before($pair, '='), ['PATH', 'HOME', 'TMPDIR', 'LANG', 'TZ'], true,
+            ))
+            // ... and neither a secret of the worker nor the app key.
+            && ! str_contains(implode(' ', $command), 'nicht-fuer-den-browser')
+            && ! str_contains(implode(' ', $command), (string) config('app.key'))
+            && $process->environment === [];
+    });
+});
+
 it('passes on only the script\'s own error code', function () {
     Process::fake(fn () => Process::result(
         output: '{"ok":false,"error":"timeout"}',

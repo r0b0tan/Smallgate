@@ -114,4 +114,20 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Timebox
+    |--------------------------------------------------------------------------
+    |
+    | A failed sign-in and every password reset request take at least this
+    | many microseconds, whether the address has an account or not -- the
+    | response time must not tell them apart. It has to stay above the slowest
+    | path: one Argon2id hash with the production parameters (about 150 ms on
+    | a typical server) plus the database work. Laravel's 200 ms leave too
+    | little room. Successful sign-ins return early and do not wait.
+    |
+    */
+
+    'timebox_duration' => (int) env('AUTH_TIMEBOX_DURATION', 500000),
+
 ];

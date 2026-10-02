@@ -1,8 +1,18 @@
 <div class="space-y-4">
-    <x-select name="customer_id" label="Kunde" required placeholder="Kunde auswählen"
-              :value="$project->customer_id"
-              :options="$customers->pluck('name', 'id')->all()"
-              hint="Bestimmt, welche Zugänge dieses Projekt sehen." />
+    @if ($project->exists)
+        {{-- Fixed once created: moving a project would show one customer's
+             feedback to another. --}}
+        <div>
+            <p class="sg-label">Kunde</p>
+            <p class="mt-1 sg-value">{{ $project->customer->name }}</p>
+            <p class="mt-1 text-xs sg-faint">Wird beim Anlegen festgelegt und lässt sich danach nicht mehr ändern.</p>
+        </div>
+    @else
+        <x-select name="customer_id" label="Kunde" required placeholder="Kunde auswählen"
+                  :value="$project->customer_id"
+                  :options="$customers->pluck('name', 'id')->all()"
+                  hint="Bestimmt, welche Zugänge dieses Projekt sehen. Lässt sich danach nicht mehr ändern." />
+    @endif
 
     <x-field name="name" label="Name" :value="$project->name" required />
 

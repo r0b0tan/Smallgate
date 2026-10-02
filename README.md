@@ -71,9 +71,10 @@ docker compose build --build-arg UID=$(id -u) --build-arg GID=$(id -g) app
 ./sg npm run build
 ```
 
-The `worker` service (part of `./sg up`) runs queued jobs — today only the
-preview thumbnails. Without it, previews still work; the cards show a
-placeholder until a worker picks the job up.
+The `worker` service (part of `./sg up`) runs queued jobs: the preview
+thumbnails and the password reset mails. Without it, previews still work and
+the cards show a placeholder until a worker picks the job up, but no reset
+mail goes out.
 
 Then:
 
@@ -171,13 +172,18 @@ The decisions, so you can judge them rather than trust them:
 through Laravel's `Hash` facade. No home-grown cryptography, no encryption of
 passwords.
 
-**Sign-in** — rate limiting per email+IP combination (five attempts per minute).
-That is *one* counter per pair, not a separate limit per email and per IP:
-attacks on one account do not lock another out, but distributed guessing across
+**Sign-in** — rate limiting per email+IP combination (five failed attempts per
+minute), so attacks on one account do not lock another out, plus a limit per IP
+across all accounts (twenty per minute) against password spraying. A
+successful login clears only the first counter. Distributed guessing across
 many source addresses is not prevented. The session id is regenerated after
 login, and there is a single generic error message for wrong password, unknown
 address, blocked account and deactivated customer. "Forgot password" answers
-identically whether or not the address exists.
+identically whether or not the address exists — in wording and in time: failed
+sign-ins and reset requests take at least `AUTH_TIMEBOX_DURATION` (0.5 s), and
+the reset mail is sent by the queue worker instead of inside the request.
+Changing one's email address asks for the current password and notifies the
+previous address.
 
 **Host header and generated links** — password-reset and invitation mails
 contain absolute URLs. So a forged `Host` header cannot send a valid token to a
@@ -467,7 +473,6 @@ APP_KEY=base64:...
 APP_URL=https://portal.example.com
 PORTAL_HOST=portal.example.com       # the host of APP_URL
 TRUSTED_PROXIES=172.30.80.0/24       # = DOCKER_SUBNET, see below
-SESSION_SECURE_COOKIE=true
 LOG_STACK=stderr                     # logs go to `docker compose logs`
 LOG_LEVEL=info
 DB_PASSWORD=<long random value>      # the stack refuses to start without one
@@ -476,8 +481,8 @@ LEGAL_*=...
 CONTACT_EMAIL=...
 ```
 
-`APP_ENV=production` and `APP_DEBUG=false` are set by `compose.prod.yaml`
-itself and cannot be overridden from `.env`.
+`APP_ENV=production`, `APP_DEBUG=false` and `SESSION_SECURE_COOKIE=true` are
+set by `compose.prod.yaml` itself and cannot be overridden from `.env`.
 
 `TRUSTED_PROXIES` names the internal network, not the reverse proxy's own
 address: requests reach PHP from the nginx container, and the proxy on the host

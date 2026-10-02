@@ -72,14 +72,13 @@ chmod 600 .env
 | `APP_URL` | `https://portal.example.com` | Basis jedes Links in Einladungs- und Reset-Mails und erster vertrauenswürdiger Host. |
 | `PORTAL_HOST` | `portal.example.com` | Nur für diesen Host antwortet nginx, alle anderen werden verworfen. |
 | `TRUSTED_PROXIES` | gleicher Wert wie `DOCKER_SUBNET` | Nur aus diesem Netz werden `X-Forwarded-*` geglaubt. **Nie `*`.** |
-| `SESSION_SECURE_COOKIE` | `true` | Wird **nicht** erzwungen. Ohne diesen Wert geht das Session-Cookie auch über HTTP. |
 | `DB_PASSWORD` | lang und zufällig | Ohne startet der Stack nicht. PostgreSQL übernimmt es nur beim **ersten** Start; spätere Änderungen in `.env` ändern das Passwort in der Datenbank nicht. |
 | `LOG_STACK` / `LOG_LEVEL` | `stderr` / `info` | `debug` kann Anfragedaten ins Log schreiben. |
 | `MAIL_*` | SMTP-Zugang | Siehe unten. |
 | `LEGAL_*`, `CONTACT_EMAIL` | Betreiberangaben | Impressum, Datenschutz, Kontakt. |
 
-`APP_ENV=production` und `APP_DEBUG=false` setzt `compose.prod.yaml` selbst.
-`.env` kann sie nicht überschreiben.
+`APP_ENV=production`, `APP_DEBUG=false` und `SESSION_SECURE_COOKIE=true` setzt
+`compose.prod.yaml` selbst. `.env` kann sie nicht überschreiben.
 
 ### Nicht anfassen
 
@@ -139,9 +138,16 @@ sein.
   }
   ```
 
-- Die Anmeldung ist pro Kombination aus E-Mail und IP gedrosselt. Verteiltes
-  Raten über viele Adressen bremst das nicht. Gegen solche Angriffe helfen nur
-  lange Passwörter.
+- Die Anmeldung ist zweifach gedrosselt: pro Kombination aus E-Mail und IP
+  (`LOGIN_MAX_ATTEMPTS`) und pro IP über alle Konten hinweg
+  (`LOGIN_MAX_ATTEMPTS_PER_IP`). Verteiltes Raten über viele IP-Adressen
+  bremst das nicht. Gegen solche Angriffe helfen nur lange Passwörter.
+- Fehlgeschlagene Anmeldungen und Reset-Anfragen dauern immer mindestens
+  `AUTH_TIMEBOX_DURATION` (Standard 0,5 s), damit die Antwortzeit nicht verrät,
+  ob eine Adresse ein Konto hat. Der Wert muss über der Dauer eines
+  Argon2id-Hashes auf dem Server liegen.
+- Wer seine E-Mail-Adresse ändert, muss das aktuelle Passwort angeben. Die
+  alte Adresse wird über die Änderung benachrichtigt.
 - Wer ausscheidet, wird sofort gesperrt. Das wirkt bei der nächsten Anfrage,
   nicht erst bei der nächsten Anmeldung. Endet eine Zusammenarbeit, den Kunden
   deaktivieren.
@@ -197,7 +203,14 @@ PHP-Abhängigkeiten auf bekannte Lücken prüfen:
 ## 9. Laufender Betrieb
 
 - **Logs:** `docker compose -f compose.prod.yaml logs`. Smallgate schreibt
-  keine Passwörter, Tokens oder personenbezogenen Daten ins Log.
+  keine Passwörter, Tokens oder personenbezogenen Daten ins Log. Das
+  Access-Log von nginx kürzt Einladungs- und Reset-Links und lässt den
+  Referrer weg. Der Reverse Proxy davor muss das selbst tun: Er sieht
+  `/einladung/<token>` und `/passwort-zuruecksetzen/<token>?email=…` im
+  Klartext. Caddy schreibt ohne `log`-Direktive kein Access-Log. Bei nginx
+  diese Pfade aus dem Log nehmen oder maskieren.
+- **Queue:** Der `worker` verschickt auch die Mails zum Zurücksetzen des
+  Passworts. Läuft er nicht, kommen keine Reset-Mails an.
 - **Protokoll:** Unter „Protokoll“ im Admin-Bereich stehen Anmeldungen (auch
   fehlgeschlagene) und alle Änderungen. Gelegentlich auf Auffälliges
   durchsehen. Einträge werden nach `ACTIVITY_RETENTION_DAYS` (Standard 90)
@@ -213,7 +226,7 @@ PHP-Abhängigkeiten auf bekannte Lücken prüfen:
 - [ ] `.env` mit `chmod 600`, eigener `APP_KEY`, langes `DB_PASSWORD`
 - [ ] `APP_URL` mit https, `PORTAL_HOST` gesetzt
 - [ ] `TRUSTED_PROXIES` = `DOCKER_SUBNET`, nicht `*`
-- [ ] `SESSION_SECURE_COOKIE=true`, `SESSION_DOMAIN` leer
+- [ ] `SESSION_DOMAIN` leer
 - [ ] `LOG_LEVEL=info`, Mail über TLS
 - [ ] Fremder Host bekommt keine Antwort, Cookies sind `Secure` und `HttpOnly`
 - [ ] Administrator mit `admin:create` angelegt, Einladung einmal durchgespielt

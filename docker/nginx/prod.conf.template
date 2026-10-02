@@ -5,11 +5,29 @@
 # TLS is terminated by the reverse proxy in front of this container. That proxy
 # must pass the original Host header and set X-Forwarded-Proto/-For.
 
+# Invitation and password reset links carry their one-time token -- and the
+# reset link the address -- in the URL. The access log gets the path with the
+# secret cut off. The referrer is left out entirely: Referrer-Policy
+# "same-origin" sends the full reset URL along with every asset of that page.
+#
+# Not covered: nginx's error log, whose format is fixed. It quotes the request
+# line only when php-fpm cannot be reached, i.e. while the app is down.
+map $request_uri $smallgate_log_uri {
+    ~^/einladung/                /einladung/[entfernt];
+    ~^/passwort-zuruecksetzen/   /passwort-zuruecksetzen/[entfernt];
+    default                      $request_uri;
+}
+
+log_format smallgate '$remote_addr - $remote_user [$time_local] '
+                     '"$request_method $smallgate_log_uri $server_protocol" '
+                     '$status $body_bytes_sent "$http_user_agent" "$http_x_forwarded_for"';
+
 # Anything that does not name the portal is dropped without an answer. This is
 # the first of two host checks; TRUSTED_HOSTS in the application is the second.
 server {
     listen 80 default_server;
     server_name _;
+    access_log /var/log/nginx/access.log smallgate;
     return 444;
 }
 
@@ -22,6 +40,8 @@ server {
     charset utf-8;
     client_max_body_size 16M;
     server_tokens off;
+
+    access_log /var/log/nginx/access.log smallgate;
 
     # The CSP is deliberately strict: Smallgate loads no third-party scripts,
     # fonts or analytics of any kind. HSTS only takes effect over https, which

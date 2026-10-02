@@ -163,6 +163,61 @@ it('clears the throttle counter after a successful login', function () {
     expect(RateLimiter::attempts(strtolower($user->email).'|127.0.0.1'))->toBe(0);
 });
 
+it('throttles one ip guessing across many accounts', function () {
+    config(['smallgate.login.max_attempts_per_ip' => 3]);
+
+    $user = $this->customerUser();
+
+    // Password spraying: one guess each against several addresses, so the
+    // per-account counter never fills up.
+    foreach (['a', 'b', 'c'] as $name) {
+        $this->post('/login', ['email' => "{$name}@holzmann.test", 'password' => 'Sommer2026!'])
+            ->assertSessionHasErrors('email');
+        $this->flushSession();
+    }
+
+    // Even the correct password of an account never tried from here is
+    // refused now -- with the same message as the per-account limit.
+    $this->post('/login', ['email' => $user->email, 'password' => self::PASSWORD])
+        ->assertSessionHasErrors('email');
+
+    expect(session('errors')->first('email'))->toContain('Sekunden');
+    $this->assertGuest();
+});
+
+it('does not reset the per-ip counter on a successful login', function () {
+    $user = $this->customerUser();
+
+    $this->post('/login', ['email' => 'jemand@holzmann.test', 'password' => 'falsch'])
+        ->assertSessionHasErrors('email');
+    $this->flushSession();
+
+    // Signing into one's own account must not buy fresh guesses at others.
+    $this->post('/login', ['email' => $user->email, 'password' => self::PASSWORD])
+        ->assertRedirect(route('portal.dashboard'));
+
+    expect(RateLimiter::attempts('login-ip|127.0.0.1'))->toBe(1);
+});
+
+it('makes a failed login wait for the timebox', function () {
+    config(['auth.timebox_duration' => 300000]);
+
+    $user = $this->customerUser();
+
+    $started = microtime(true);
+    $this->post('/login', ['email' => 'gibt-es-nicht@holzmann.test', 'password' => 'falsch']);
+    $unknown = microtime(true) - $started;
+
+    $this->flushSession();
+
+    $started = microtime(true);
+    $this->post('/login', ['email' => $user->email, 'password' => 'falsch']);
+    $wrongPassword = microtime(true) - $started;
+
+    expect($unknown)->toBeGreaterThanOrEqual(0.3)
+        ->and($wrongPassword)->toBeGreaterThanOrEqual(0.3);
+});
+
 /* -------------------------------------------------------------- mid-session */
 
 it('logs out a user who is blocked while signed in', function () {

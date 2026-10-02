@@ -16,6 +16,9 @@
                 <x-field name="name" label="Name" :value="$user->name" required autocomplete="name" />
                 <x-field name="email" label="E-Mail-Adresse" type="email" :value="$user->email" required
                          autocomplete="username" />
+                <x-field name="email_password" label="Aktuelles Passwort" type="password"
+                         autocomplete="current-password"
+                         hint="Nur nötig, wenn Sie die E-Mail-Adresse ändern." />
 
                 <div class="flex justify-end">
                     <button type="submit" class="sg-btn-primary">Speichern</button>

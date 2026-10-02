@@ -7,8 +7,9 @@
 # Mailpit, and nginx answers only for PORTAL_HOST. TLS is terminated by a
 # reverse proxy in front of the "web" port -- see README, "Betrieb".
 #
-# Configuration comes from .env next to this file. APP_ENV and APP_DEBUG are
-# fixed here, so a stray development .env cannot switch on debug output.
+# Configuration comes from .env next to this file. APP_ENV, APP_DEBUG and
+# SESSION_SECURE_COOKIE are fixed here, so a stray development .env can neither
+# switch on debug output nor send the session cookie over plain http.
 
 name: smallgate
 
@@ -19,6 +20,9 @@ x-app: &app
   environment:
     APP_ENV: production
     APP_DEBUG: "false"
+    # The session cookie only ever travels over TLS. Fixed for the same reason
+    # as the two above: a development .env must not be able to undo it.
+    SESSION_SECURE_COOKIE: "true"
     # Static-directory previews need subdomain serving that does not exist yet
     # (ADR 0001), so production offers upstream URLs only unless .env says
     # otherwise.

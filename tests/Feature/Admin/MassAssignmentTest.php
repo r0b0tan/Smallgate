@@ -190,6 +190,52 @@ it('ignores a customer reassignment smuggled into the preview form', function ()
         ->and($preview->status)->toBe(PreviewStatus::Draft);
 });
 
+it('keeps a project with its customer when another one is submitted', function () {
+    $admin = $this->admin();
+    $mine = Customer::factory()->create();
+    $theirs = Customer::factory()->create();
+    $project = Project::factory()->for_customer($mine)->create(['name' => 'Alt']);
+
+    // Moving the project would show its feedback -- comments and the names of
+    // the people who wrote them -- to the other customer's users.
+    $this->actingAs($admin)->patch(route('admin.projects.update', $project), [
+        'customer_id' => $theirs->id,
+        'name' => 'Neu',
+        'slug' => $project->slug,
+        'status' => $project->status->value,
+    ])->assertSessionHasNoErrors()->assertRedirect(route('admin.projects.show', $project));
+
+    $project->refresh();
+
+    expect($project->customer_id)->toBe($mine->id)
+        ->and($project->name)->toBe('Neu');
+});
+
+it('shows the customer of an existing project as fixed', function () {
+    $project = Project::factory()->create();
+
+    $this->actingAs($this->admin())
+        ->get(route('admin.projects.edit', $project))
+        ->assertOk()
+        ->assertSee($project->customer->name)
+        ->assertDontSee('name="customer_id"', escape: false);
+});
+
+it('checks the slug against the project\'s own customer on update', function () {
+    $customer = Customer::factory()->create();
+    Project::factory()->for_customer($customer)->create(['slug' => 'belegt']);
+    $project = Project::factory()->for_customer($customer)->create(['slug' => 'frei']);
+
+    $this->actingAs($this->admin())
+        ->from(route('admin.projects.edit', $project))
+        ->patch(route('admin.projects.update', $project), [
+            'name' => $project->name,
+            'slug' => 'belegt',
+            'status' => $project->status->value,
+        ])
+        ->assertSessionHasErrors('slug');
+});
+
 /* ---------------------------------------------- database level backstop */
 
 it('refuses a customer user without a customer at the database level', function () {

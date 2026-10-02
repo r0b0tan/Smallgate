@@ -221,3 +221,42 @@ it('refuses to invite an address that already has an account', function () {
 
     expect(Invitation::count())->toBe(0);
 });
+
+it('refuses an invitation whose address got an account in the meantime', function () {
+    // Two customers invited the same person, and the other invitation was
+    // redeemed first -- or a user changed their own address to this one.
+    $customer = Customer::factory()->create();
+    $token = Str::random(64);
+
+    Invitation::factory()->withToken($token)
+        ->create(['customer_id' => $customer->id, 'email' => 'doppelt@holzmann.test']);
+
+    $this->customerUser(attributes: ['email' => 'doppelt@holzmann.test']);
+
+    $this->get(route('invitations.show', ['token' => $token]))
+        ->assertOk()
+        ->assertSee('Einladung nicht mehr gültig', escape: false);
+
+    // Not a server error, and no second account.
+    $this->post(route('invitations.accept', ['token' => $token]), [
+        'name' => 'Zweiter Versuch',
+        'password' => self::PASSWORD,
+        'password_confirmation' => self::PASSWORD,
+    ])->assertRedirect(route('invitations.show', ['token' => $token]));
+
+    expect(User::whereEmail('doppelt@holzmann.test')->count())->toBe(1);
+    $this->assertGuest();
+});
+
+it('turns a lost race for the address into a refused redemption', function () {
+    $customer = Customer::factory()->create();
+    $invitation = Invitation::factory()
+        ->create(['customer_id' => $customer->id, 'email' => 'rennen@holzmann.test']);
+
+    // The account appears after the redeemability check, right before the
+    // insert -- the unique index has the last word.
+    $this->customerUser(attributes: ['email' => 'rennen@holzmann.test']);
+
+    expect(app(InvitationService::class)->redeem($invitation, 'Zu spät', self::PASSWORD))->toBeNull()
+        ->and($invitation->fresh()->accepted_at)->toBeNull();
+});

@@ -26,15 +26,19 @@ return [
     | Login Throttling
     |--------------------------------------------------------------------------
     |
-    | Failed logins are rate limited per email+IP combination -- one counter
-    | per pair, not separate per-email and per-IP limits. Successful logins
-    | clear the counter. Distributed guessing from many source addresses is
-    | not covered by this.
+    | Failed logins are rate limited twice: per email+IP combination, so
+    | guessing against one account never locks another one out, and per IP
+    | across all addresses, so one source cannot try a few passwords against
+    | every account (password spraying). A successful login clears only the
+    | first counter -- signing into one's own account must not reset the
+    | budget for guessing at others. Distributed guessing from many source
+    | addresses is not covered by this.
     |
     */
 
     'login' => [
         'max_attempts' => (int) env('LOGIN_MAX_ATTEMPTS', 5),
+        'max_attempts_per_ip' => (int) env('LOGIN_MAX_ATTEMPTS_PER_IP', 20),
         'decay_seconds' => (int) env('LOGIN_DECAY_SECONDS', 60),
     ],
 

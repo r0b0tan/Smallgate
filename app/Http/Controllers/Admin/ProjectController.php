@@ -92,8 +92,7 @@ class ProjectController extends Controller
         $this->authorize('update', $project);
 
         return view('admin.projects.edit', [
-            'project' => $project,
-            'customers' => Customer::query()->orderBy('name')->get(),
+            'project' => $project->load('customer'),
             'statuses' => ProjectStatus::options(),
         ]);
     }
@@ -102,10 +101,9 @@ class ProjectController extends Controller
     {
         $this->authorize('update', $project);
 
-        $validated = $request->validated();
-
-        $project->fill(Arr::except($validated, ['customer_id']));
-        $project->customer_id = $validated['customer_id'];
+        // No customer_id here: it is fixed once the project exists, see
+        // UpdateProjectRequest.
+        $project->fill($request->validated());
         $project->save();
 
         if ($project->wasChanged()) {

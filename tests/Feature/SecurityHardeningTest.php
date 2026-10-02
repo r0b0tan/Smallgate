@@ -112,12 +112,42 @@ it('marks the session cookie httponly on a real response', function () {
 });
 
 it('requires a secure session cookie in production', function () {
-    // config/session.php reads SESSION_SECURE_COOKIE; .env.example documents
-    // that it must be true in production. Assert the knob exists and is
-    // honoured rather than hard coded.
-    config(['session.secure' => true]);
+    // Fixed in the production stack like APP_DEBUG, so a stray development
+    // .env cannot send the session cookie over plain http.
+    expect(file_get_contents(base_path('compose.prod.yaml')))
+        ->toContain('SESSION_SECURE_COOKIE: "true"');
+});
 
-    expect(config('session.secure'))->toBeTrue();
+/* -------------------------------------------------------------------- logs */
+
+it('keeps one-time tokens out of the production access log', function () {
+    $nginx = file_get_contents(base_path('docker/nginx/prod.conf.template'));
+
+    // The path is cut after the prefix, and the log format uses the cut path
+    // instead of $request and leaves the referrer out.
+    expect($nginx)
+        ->toContain('~^/einladung/                /einladung/[entfernt];')
+        ->toContain('~^/passwort-zuruecksetzen/   /passwort-zuruecksetzen/[entfernt];')
+        ->toContain('access_log /var/log/nginx/access.log smallgate;');
+
+    preg_match('/log_format smallgate (.*?);/s', $nginx, $format);
+
+    expect($format[1] ?? '')
+        ->toContain('$smallgate_log_uri')
+        ->not->toContain('$request ')
+        ->not->toContain('$request"')
+        ->not->toContain('$request_uri')
+        ->not->toContain('$http_referer');
+});
+
+it('publishes the development ports on loopback only', function () {
+    preg_match_all('/^\s+- "([^"]+):\d+"$/m', file_get_contents(base_path('compose.yaml')), $ports);
+
+    expect($ports[1])->not->toBeEmpty();
+
+    foreach ($ports[1] as $published) {
+        expect($published)->toStartWith('${DEV_BIND:-127.0.0.1}:');
+    }
 });
 
 /* --------------------------------------------------------- no third parties */

@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\Invitation;
 use App\Models\User;
 use App\Notifications\InvitationNotification;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -102,6 +103,17 @@ class InvitationService
      * because only one of them sees a row still marked unaccepted.
      */
     public function redeem(Invitation $invitation, string $name, #[\SensitiveParameter] string $password): ?User
+    {
+        try {
+            return $this->createUser($invitation, $name, $password);
+        } catch (UniqueConstraintViolationException) {
+            // The address got an account between the redeemability check and
+            // the insert. Same answer as any other unusable invitation.
+            return null;
+        }
+    }
+
+    private function createUser(Invitation $invitation, string $name, #[\SensitiveParameter] string $password): ?User
     {
         return DB::transaction(function () use ($invitation, $name, $password): ?User {
             $claimed = Invitation::query()

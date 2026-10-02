@@ -53,6 +53,7 @@ return [
         'password' => 'Passwort',
         'password_confirmation' => 'Passwortbestätigung',
         'current_password' => 'Aktuelles Passwort',
+        'email_password' => 'Aktuelles Passwort',
         'slug' => 'Kürzel',
         'contact_email' => 'Kontakt-E-Mail',
         'is_active' => 'Status',

@@ -7,6 +7,8 @@
 
 use App\Models\User;
 use App\Notifications\ResetPasswordNotification;
+use Illuminate\Contracts\Queue\ShouldBeEncrypted;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
@@ -154,6 +156,35 @@ it('does not reveal whether an email address exists', function () {
     // Identical status message for both, and no validation error either way.
     expect($first->getSession()->get('status'))->toBe($second->getSession()->get('status'));
     $second->assertSessionHasNoErrors();
+});
+
+it('answers a reset request after the same minimum time, known address or not', function () {
+    Notification::fake();
+    config(['auth.timebox_duration' => 300000]);
+
+    $known = $this->customerUser();
+
+    $started = microtime(true);
+    $this->post(route('password.email'), ['email' => $known->email]);
+    $knownTook = microtime(true) - $started;
+
+    $this->flushSession();
+
+    $started = microtime(true);
+    $this->post(route('password.email'), ['email' => 'gibt-es-nicht@example.test']);
+    $unknownTook = microtime(true) - $started;
+
+    expect($knownTook)->toBeGreaterThanOrEqual(0.3)
+        ->and($unknownTook)->toBeGreaterThanOrEqual(0.3);
+});
+
+it('leaves the reset mail to the queue, encrypted', function () {
+    // Sending inside the request would make an existing address measurably
+    // slower than an unknown one. The queued payload holds the token.
+    $notification = new ResetPasswordNotification('token');
+
+    expect($notification)->toBeInstanceOf(ShouldQueue::class)
+        ->and($notification)->toBeInstanceOf(ShouldBeEncrypted::class);
 });
 
 it('sends no reset mail to a blocked account', function () {

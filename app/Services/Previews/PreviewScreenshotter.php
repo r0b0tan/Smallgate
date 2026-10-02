@@ -19,6 +19,12 @@ use Illuminate\Support\Facades\Process;
  */
 class PreviewScreenshotter
 {
+    /**
+     * The only variables the screenshot process inherits. None of them is a
+     * secret.
+     */
+    private const ENVIRONMENT_ALLOWLIST = ['PATH', 'HOME', 'TMPDIR', 'LANG', 'TZ'];
+
     public function __construct(private readonly PreviewTargetGuard $guard) {}
 
     /**
@@ -46,7 +52,11 @@ class PreviewScreenshotter
         $result = Process::path(base_path())
             ->timeout($timeout + 15)
             ->input(json_encode($spec, JSON_THROW_ON_ERROR))
-            ->run([(string) $config['node'], base_path('scripts/preview-screenshot.mjs')]);
+            ->run([
+                ...$this->cleanEnvironment(),
+                (string) $config['node'],
+                base_path('scripts/preview-screenshot.mjs'),
+            ]);
 
         $answer = json_decode(trim($result->output()), true);
 
@@ -127,6 +137,31 @@ class PreviewScreenshotter
         $addresses = gethostbynamel($host);
 
         return $addresses === false ? [] : array_values($addresses);
+    }
+
+    /**
+     * Start the script through `env -i` with only what Node and Chromium need.
+     * The worker's environment carries APP_KEY, the database and the mail
+     * password; a browser that renders foreign pages has no use for any of
+     * them, and must not hold them should a page ever break out of the
+     * renderer. Done with env(1) rather than Process::env(), which only adds
+     * to the inherited environment.
+     *
+     * @return list<string>
+     */
+    private function cleanEnvironment(): array
+    {
+        $keep = [];
+
+        foreach (self::ENVIRONMENT_ALLOWLIST as $name) {
+            $value = getenv($name);
+
+            if (is_string($value) && $value !== '') {
+                $keep[] = $name.'='.$value;
+            }
+        }
+
+        return ['env', '-i', ...$keep];
     }
 
     private function isJpeg(string $path): bool

@@ -97,8 +97,10 @@ class Invitation extends Model
     }
 
     /**
-     * An invitation is only redeemable while it is unused, unexpired and its
-     * customer is still active.
+     * An invitation is only redeemable while it is unused, unexpired, its
+     * customer is still active and its address does not have an account yet --
+     * another customer's invitation may have been redeemed first, or a user
+     * may have changed their own address to this one since.
      */
     public function isRedeemable(): bool
     {
@@ -106,7 +108,11 @@ class Invitation extends Model
             return false;
         }
 
-        return $this->customer === null || $this->customer->is_active;
+        if ($this->customer !== null && ! $this->customer->is_active) {
+            return false;
+        }
+
+        return ! User::query()->where('email', $this->email)->exists();
     }
 
     public function statusLabel(): string

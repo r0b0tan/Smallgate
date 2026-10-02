@@ -1,5 +1,9 @@
 name: smallgate
 
+# Every published port listens on loopback only: the development database has
+# a well-known password and Mailpit shows every invitation and reset link.
+# DEV_BIND=0.0.0.0 in .env opens them to the network on purpose.
+
 services:
   app:
     build:
@@ -46,7 +50,7 @@ services:
     image: nginx:1.27-alpine
     restart: unless-stopped
     ports:
-      - "${APP_PORT:-8080}:80"
+      - "${DEV_BIND:-127.0.0.1}:${APP_PORT:-8080}:80"
     volumes:
       - .:/var/www/html:ro
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
@@ -61,7 +65,7 @@ services:
       POSTGRES_USER: ${DB_USERNAME:-smallgate}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
     ports:
-      - "${DB_PORT_FORWARD:-55432}:5432"
+      - "${DEV_BIND:-127.0.0.1}:${DB_PORT_FORWARD:-55432}:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
       - ./docker/postgres/init-test-db.sh:/docker-entrypoint-initdb.d/10-init-test-db.sh:ro
@@ -72,10 +76,10 @@ services:
       retries: 10
 
   mailpit:
-    image: axllent/mailpit:latest
+    image: axllent/mailpit:v1.30.0
     restart: unless-stopped
     ports:
-      - "${MAILPIT_UI_PORT:-8025}:8025"
+      - "${DEV_BIND:-127.0.0.1}:${MAILPIT_UI_PORT:-8025}:8025"
     environment:
       MP_MAX_MESSAGES: 500
       MP_SMTP_AUTH_ACCEPT_ANY: 1
@@ -87,7 +91,7 @@ services:
     volumes:
       - .:/var/www/html
     ports:
-      - "${VITE_PORT:-5173}:5173"
+      - "${DEV_BIND:-127.0.0.1}:${VITE_PORT:-5173}:5173"
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     profiles: ["dev"]
 
@@ -98,7 +102,7 @@ services:
     image: nginx:1.27-alpine
     restart: unless-stopped
     ports:
-      - "${PREVIEW_MOCK_PORT:-443}:443"
+      - "${DEV_BIND:-127.0.0.1}:${PREVIEW_MOCK_PORT:-443}:443"
     volumes:
       - ./storage/app/previews:/srv/previews:ro
       - ./docker/nginx/preview.conf:/etc/nginx/conf.d/default.conf:ro

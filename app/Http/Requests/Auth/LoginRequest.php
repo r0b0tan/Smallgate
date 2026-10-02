@@ -51,7 +51,7 @@ class LoginRequest extends FormRequest
         ];
 
         if (! Auth::attempt($credentials, $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey(), $this->decaySeconds());
+            $this->hitRateLimiters();
             $this->recordFailure(User::query()->where('email', $credentials['email'])->first());
 
             throw ValidationException::withMessages([
@@ -66,14 +66,22 @@ class LoginRequest extends FormRequest
             Auth::guard('web')->logout();
             $this->recordFailure($user);
 
-            RateLimiter::hit($this->throttleKey(), $this->decaySeconds());
+            $this->hitRateLimiters();
 
             throw ValidationException::withMessages([
                 'email' => __('auth.failed'),
             ]);
         }
 
+        // Only the per-account counter. The per-IP one keeps running, or an
+        // attacker could reset it by signing into an account of their own.
         RateLimiter::clear($this->throttleKey());
+    }
+
+    private function hitRateLimiters(): void
+    {
+        RateLimiter::hit($this->throttleKey(), $this->decaySeconds());
+        RateLimiter::hit($this->ipThrottleKey(), $this->decaySeconds());
     }
 
     /**
@@ -93,15 +101,25 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        $maxAttempts = (int) config('smallgate.login.max_attempts', 5);
+        $limits = [
+            $this->throttleKey() => (int) config('smallgate.login.max_attempts', 5),
+            $this->ipThrottleKey() => (int) config('smallgate.login.max_attempts_per_ip', 20),
+        ];
 
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), $maxAttempts)) {
+        $exceeded = array_keys(array_filter(
+            $limits,
+            fn (int $maxAttempts, string $key) => RateLimiter::tooManyAttempts($key, $maxAttempts),
+            ARRAY_FILTER_USE_BOTH,
+        ));
+
+        if ($exceeded === []) {
             return;
         }
 
         Event::dispatch(new Lockout($this));
 
-        $seconds = RateLimiter::availableIn($this->throttleKey());
+        // Same message for either limit: which one was hit is nobody's business.
+        $seconds = max(array_map(fn (string $key) => RateLimiter::availableIn($key), $exceeded));
 
         throw ValidationException::withMessages([
             'email' => __('auth.throttle', [
@@ -120,14 +138,22 @@ class LoginRequest extends FormRequest
      * Throttle per email+IP combination: guessing against one account never
      * locks another one out, and a single IP is limited per account.
      *
-     * This is one counter per pair, not separate per-email and per-IP limits.
-     * An attacker with many source addresses therefore gets a fresh budget per
-     * address; distributed guessing is not covered here.
+     * An attacker with many source addresses gets a fresh budget per address;
+     * distributed guessing is not covered here.
      */
     public function throttleKey(): string
     {
         return Str::transliterate(
             Str::lower((string) $this->string('email')).'|'.$this->ip()
         );
+    }
+
+    /**
+     * Throttle per IP across all addresses: a few guesses against every
+     * account from one source add up here.
+     */
+    public function ipThrottleKey(): string
+    {
+        return 'login-ip|'.$this->ip();
     }
 }
