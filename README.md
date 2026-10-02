@@ -194,8 +194,9 @@ only from the proxies listed in `TRUSTED_PROXIES`; with none listed the headers
 are ignored.
 
 The web server in front should reject unknown hosts itself as well (in nginx, a
-`default_server` with `return 444`). The bundled nginx configuration is a
-development configuration and deliberately does not.
+`default_server` with `return 444`). The production configuration
+(`docker/nginx/prod.conf.template`) does; the development one deliberately does
+not.
 
 **Sessions** — database driver, `HttpOnly`, `SameSite=lax`, `Secure` in
 production. After a password change or reset, all other sessions are deleted and
@@ -418,6 +419,100 @@ They are written for German law (§ 5 DDG, GDPR); if you operate elsewhere,
 replace the wording in `resources/views/legal/`. Either way the final text needs
 legal review before you go live.
 
+## Running in production
+
+`compose.prod.yaml` is the production stack. It is used on its own, never
+together with `compose.yaml`:
+
+| | Development (`compose.yaml`) | Production (`compose.prod.yaml`) |
+|---|---|---|
+| Code | bind-mounted from the working copy | baked into the image, no dev dependencies |
+| Assets | `npm run build` / Vite on the host | built in the image |
+| Database | published on `localhost:55432` | internal network only |
+| Mail | Mailpit | your SMTP server |
+| Web port | all interfaces | `127.0.0.1` only |
+| nginx | answers every host | answers `PORTAL_HOST` only, HSTS |
+| Migrations | by hand | the one-shot `migrate` service, before app and worker start |
+
+PHP runs as `www-data` against read-only code; only `storage/` (a volume) and
+`bootstrap/cache/` are writable. The `worker` keeps Chromium's sandbox with the
+same seccomp profile as in development.
+
+### First deployment
+
+TLS is terminated by a reverse proxy on the same machine. It must pass the
+original `Host` header and set `X-Forwarded-For` and `X-Forwarded-Proto`. With
+Caddy that is all of it:
+
+```
+portal.example.com {
+    reverse_proxy 127.0.0.1:8080
+}
+```
+
+Then:
+
+```bash
+git clone https://github.com/r0b0tan/Smallgate.git && cd Smallgate
+cp .env.example .env
+echo "base64:$(openssl rand -base64 32)"   # the value for APP_KEY
+```
+
+Fill in `.env` before running any `docker compose -f compose.prod.yaml`
+command — the file refuses to load without `PORTAL_HOST` and `DB_PASSWORD`:
+
+```dotenv
+APP_KEY=base64:...
+APP_URL=https://portal.example.com
+PORTAL_HOST=portal.example.com       # the host of APP_URL
+TRUSTED_PROXIES=172.30.80.0/24       # = DOCKER_SUBNET, see below
+SESSION_SECURE_COOKIE=true
+LOG_STACK=stderr                     # logs go to `docker compose logs`
+LOG_LEVEL=info
+DB_PASSWORD=<long random value>      # the stack refuses to start without one
+MAIL_HOST=... MAIL_PORT=... MAIL_USERNAME=... MAIL_PASSWORD=... MAIL_FROM_ADDRESS=...
+LEGAL_*=...
+CONTACT_EMAIL=...
+```
+
+`APP_ENV=production` and `APP_DEBUG=false` are set by `compose.prod.yaml`
+itself and cannot be overridden from `.env`.
+
+`TRUSTED_PROXIES` names the internal network, not the reverse proxy's own
+address: requests reach PHP from the nginx container, and the proxy on the host
+arrives through that network's gateway. If `172.30.80.0/24` is taken on your
+machine, set `DOCKER_SUBNET` to a free range and use the same value in
+`TRUSTED_PROXIES`. This is safe because the web port listens on loopback only
+(`WEB_BIND`) — nothing but the local proxy can reach it.
+
+Start the stack and create the first administrator (the snippet from
+[Demo accounts](#demo-accounts)):
+
+```bash
+docker compose -f compose.prod.yaml up -d --build
+docker compose -f compose.prod.yaml exec app php artisan tinker
+```
+
+### Updates
+
+```bash
+git pull
+docker compose -f compose.prod.yaml up -d --build
+```
+
+`migrate` runs first; `app` and `worker` start only once it has succeeded.
+Configuration is cached on every container start, so a change to `.env` needs
+`docker compose -f compose.prod.yaml up -d --force-recreate`.
+
+### Data
+
+All state lives in two volumes: `db-data` (PostgreSQL) and `storage`
+(thumbnails, static preview directories under `storage/app/previews`, logs if
+not sent to stderr). Back up both.
+
+Static-directory previews are not served in production yet — that is the open
+decision in ADR 0001. Until then, use upstream-URL previews.
+
 ## Project structure
 
 ```
@@ -436,7 +531,7 @@ app/
 └── Services/
     ├── InvitationService.php
     └── Previews/       NullPreviewProvisioner, PreviewTargetGuard, PreviewScreenshotter
-docker/                 PHP image, nginx, PostgreSQL init
+docker/                 PHP image (dev and prod stages), nginx, PostgreSQL init
 scripts/                preview-screenshot.mjs (Playwright, run by the worker)
 docs/adr/               architecture decision records
 ```

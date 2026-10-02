@@ -1,0 +1,72 @@
+# Production configuration. The nginx image renders this template at start and
+# substitutes ${PORTAL_HOST} (from compose.prod.yaml); nginx's own $variables
+# are left alone because they are not set in the environment.
+#
+# TLS is terminated by the reverse proxy in front of this container. That proxy
+# must pass the original Host header and set X-Forwarded-Proto/-For.
+
+# Anything that does not name the portal is dropped without an answer. This is
+# the first of two host checks; TRUSTED_HOSTS in the application is the second.
+server {
+    listen 80 default_server;
+    server_name _;
+    return 444;
+}
+
+server {
+    listen 80;
+    server_name ${PORTAL_HOST};
+    root /var/www/html/public;
+    index index.php;
+
+    charset utf-8;
+    client_max_body_size 16M;
+    server_tokens off;
+
+    # The CSP is deliberately strict: Smallgate loads no third-party scripts,
+    # fonts or analytics of any kind. HSTS only takes effect over https, which
+    # is how browsers reach this server through the proxy.
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "same-origin" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # Hashed file names: a new build has new names, so the old ones can be
+    # cached for good. add_header here replaces the server level headers, so
+    # the ones that matter for static files are repeated.
+    location /build/ {
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        add_header Strict-Transport-Security "max-age=31536000" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        try_files $uri =404;
+    }
+
+    # Only the front controller is ever executed.
+    location ~ ^/index\.php(/|$) {
+        fastcgi_split_path_info ^(/index\.php)(/.*)$;
+        fastcgi_pass app:9000;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_hide_header X-Powered-By;
+    }
+
+    location ~ \.php$ {
+        return 404;
+    }
+
+    # Never serve dotfiles (.env, .git, ...) even if they end up under public/.
+    location ~ /\. {
+        deny all;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    error_page 404 /index.php;
+}

@@ -1,15 +1,16 @@
 # Nur der Build-Kontext, nicht der Bind-Mount aus compose.yaml.
-# Das Dockerfile kopiert ausschliesslich docker/php/php.ini -- alles andere
-# muss den Docker-Daemon gar nicht erst erreichen.
+# Die Dev-Stage kopiert nur docker/php/php.ini, die Produktions-Stage den
+# Anwendungscode. Was hier steht, landet in keinem Image.
 
 # Secrets und lokale Konfiguration
 .env
 .env.*
 !.env.example
 auth.json
-*.pem
-*.key
+**/*.pem
+**/*.key
 storage/*.key
+docker/nginx/certs
 
 # Versionskontrolle und Editor-/Tooling-Kram
 .git
@@ -42,18 +43,21 @@ storage/framework/sessions
 storage/framework/testing
 storage/framework/views
 storage/app/previews
+storage/app/private
+storage/app/public
 storage/pail
 bootstrap/cache
 .phpunit.cache
 .phpunit.result.cache
-*.log
+**/*.log
 
 # Datenbank-Dumps und Backups
-*.sql
-*.sql.gz
-*.dump
-*.bak
+**/*.sql
+**/*.sql.gz
+**/*.dump
+**/*.bak
 
-# Tests und Dokumentation werden im Image nicht gebraucht
+# Tests, Dokumentation und Entwurfsdateien werden im Image nicht gebraucht
 tests
 docs
+design

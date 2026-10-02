@@ -13,7 +13,8 @@ E-Mail. Features außerhalb des MVP nicht hinzufügen.
 - Laravel 13, PHP 8.4, PostgreSQL 17
 - Blade + Tailwind CSS 4, minimal JavaScript (nur Schließen des Konto-Menüs)
 - Pest 5 / PHPUnit 13, Tests gegen echtes PostgreSQL (nicht SQLite)
-- Docker Compose, Mailpit
+- Docker Compose, Mailpit. Produktion: `compose.prod.yaml` (Dockerfile-Stages
+  `prod` und `web`), nie zusammen mit `compose.yaml`
 - Queue: Datenbank-Treiber, Worker-Service `worker` in Compose
 - Vorschaubilder: `playwright-core` + Alpine-Chromium, ausschließlich im
   Queue-Worker (`scripts/preview-screenshot.mjs`), nie im Browser des Kunden

@@ -1,0 +1,107 @@
+# Production stack. Used on its own, never together with compose.yaml:
+#
+#   docker compose -f compose.prod.yaml up -d --build
+#
+# Differences to the development stack: the code is baked into the image (no
+# bind mount, no dev dependencies), the database is not published, there is no
+# Mailpit, and nginx answers only for PORTAL_HOST. TLS is terminated by a
+# reverse proxy in front of the "web" port -- see README, "Betrieb".
+#
+# Configuration comes from .env next to this file. APP_ENV and APP_DEBUG are
+# fixed here, so a stray development .env cannot switch on debug output.
+
+name: smallgate
+
+x-app: &app
+  image: smallgate-app:prod
+  restart: unless-stopped
+  env_file: .env
+  environment:
+    APP_ENV: production
+    APP_DEBUG: "false"
+  volumes:
+    - storage:/var/www/html/storage
+  networks:
+    - internal
+
+services:
+  # One-shot: applies migrations, then exits. app and worker wait for it, so
+  # new code never runs against an old schema.
+  migrate:
+    <<: *app
+    restart: "no"
+    command: php artisan migrate --force --no-interaction
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    <<: *app
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      target: prod
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # Runs queued jobs -- today only the preview thumbnails.
+  worker:
+    <<: *app
+    command: php artisan queue:work --tries=1 --timeout=120 --max-jobs=50
+    # Chromium's sandbox needs namespaces that Docker's default seccomp profile
+    # refuses. This is that default profile plus exactly those -- only for the
+    # worker, the only container that starts a browser.
+    security_opt:
+      - seccomp=./docker/seccomp/chromium.json
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    image: smallgate-web:prod
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      target: web
+    restart: unless-stopped
+    environment:
+      PORTAL_HOST: ${PORTAL_HOST:?PORTAL_HOST fehlt in .env (Hostname aus APP_URL)}
+    # Loopback only: the reverse proxy on this machine is the only client. A
+    # port published on all interfaces would also bypass the host firewall.
+    ports:
+      - "${WEB_BIND:-127.0.0.1}:${APP_PORT:-8080}:80"
+    networks:
+      - internal
+    depends_on:
+      - app
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-smallgate}
+      POSTGRES_USER: ${DB_USERNAME:-smallgate}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD fehlt in .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-smallgate} -d ${DB_DATABASE:-smallgate}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+# A fixed range, so TRUSTED_PROXIES can name it: requests reach php-fpm from the
+# nginx container, and the reverse proxy on the host arrives through this
+# network's gateway.
+networks:
+  internal:
+    ipam:
+      config:
+        - subnet: ${DOCKER_SUBNET:-172.30.80.0/24}
+
+volumes:
+  db-data:
+  storage:
