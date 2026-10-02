@@ -1,13 +1,17 @@
 @if (session('status'))
-    <div class="mb-6 rounded-lg bg-accent/10 px-4 py-3 text-sm text-accent ring-1 ring-inset ring-accent/30"
-         role="status">
+    <div class="mb-6 sg-alert-status" role="status">
         {{ session('status') }}
     </div>
 @endif
 
+@if (session('notice'))
+    <div class="mb-6 sg-alert-notice" role="status">
+        {{ session('notice') }}
+    </div>
+@endif
+
 @if (session('error'))
-    <div class="mb-6 rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-300 ring-1 ring-inset ring-red-500/30"
-         role="alert">
+    <div class="mb-6 sg-alert-error" role="alert">
         {{ session('error') }}
     </div>
 @endif

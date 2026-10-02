@@ -76,7 +76,10 @@ class ProjectController extends Controller
 
         return view('admin.projects.show', [
             'project' => $project->load('customer'),
-            'previews' => $project->previews()->orderBy('name')->get(),
+            'previews' => $project->previews()
+                ->with(['feedback' => fn ($q) => $q->with('user')->latest()])
+                ->orderBy('name')
+                ->get(),
         ]);
     }
 

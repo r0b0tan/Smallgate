@@ -3,11 +3,13 @@
 @section('title', 'Anmelden')
 
 @section('card')
-    <h1 class="font-display text-xl font-bold text-white">Anmelden</h1>
-    <p class="mt-1 text-sm sg-faint">Bitte melden Sie sich mit Ihren Zugangsdaten an.</p>
+    <h1 class="text-2xl font-bold">Willkommen</h1>
+    <p class="mt-2 text-base sg-muted">
+        Bitte melden Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort an.
+    </p>
 
     @if (session('status'))
-        <div class="mt-4 rounded-lg bg-accent/10 px-4 py-3 text-sm text-accent ring-1 ring-inset ring-accent/30">
+        <div class="mt-5 sg-alert-status" role="status">
             {{ session('status') }}
         </div>
     @endif
@@ -15,13 +17,12 @@
     {{-- One generic error for wrong password, unknown address and blocked
          account alike -- the form is not an account enumeration oracle. --}}
     @error('email')
-        <div class="mt-4 rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-300 ring-1 ring-inset ring-red-500/30"
-             role="alert">
+        <div class="mt-5 sg-alert-error" role="alert">
             {{ $message }}
         </div>
     @enderror
 
-    <form method="POST" action="{{ route('login') }}" class="mt-6 space-y-4">
+    <form method="POST" action="{{ route('login') }}" class="mt-6 space-y-5">
         @csrf
 
         <x-field name="email" label="E-Mail-Adresse" type="email" required
@@ -30,14 +31,14 @@
         <x-field name="password" label="Passwort" type="password" required
                  autocomplete="current-password" />
 
-        <div class="flex items-center justify-between">
-            <label class="flex items-center gap-2 text-sm sg-muted">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <label class="flex items-center gap-3 text-base sg-muted">
                 <input type="checkbox" name="remember" value="1"
-                       class="rounded border-white/20 bg-white/5 text-accent focus:ring-accent">
+                       class="size-5 rounded border-line accent-brand">
                 Angemeldet bleiben
             </label>
 
-            <a href="{{ route('password.request') }}" class="text-sm text-accent hover:text-accent-soft">
+            <a href="{{ route('password.request') }}" class="text-base sg-link">
                 Passwort vergessen?
             </a>
         </div>
@@ -45,8 +46,8 @@
         <button type="submit" class="sg-btn-primary w-full">Anmelden</button>
     </form>
 
-    <p class="mt-6 border-t border-white/5 pt-4 text-xs sg-faint">
-        Zugänge werden ausschließlich von {{ config('app.name') }} eingerichtet.
-        Eine Registrierung ist nicht vorgesehen.
+    <p class="mt-6 border-t border-line pt-5 text-sm sg-muted">
+        Fragen? Antworten Sie einfach auf unsere E-Mail.
+        Zugänge werden ausschließlich von uns eingerichtet. Eine Registrierung ist nicht vorgesehen.
     </p>
 @endsection

@@ -9,6 +9,7 @@
 use App\Models\Customer;
 use App\Models\Preview;
 use App\Models\Project;
+use Illuminate\Support\Carbon;
 
 /* ----------------------------------------------------------- requirement 6 */
 
@@ -30,16 +31,20 @@ it('shows a customer their own projects', function () {
         ->assertSee('Website-Relaunch');
 });
 
-it('sends a customer with a single project straight to it', function () {
+it('shows a customer with a single project everything on the overview', function () {
     $customer = Customer::factory()->create();
     $user = $this->customerUser($customer);
 
-    $only = Project::factory()->for_customer($customer)->create();
+    $only = Project::factory()->for_customer($customer)->create(['name' => 'Einziges Projekt']);
+    Preview::factory()->for_project($only)->available()->create(['name' => 'Entwurf 1']);
 
-    // A list of one is a click nobody should have to make.
+    // One page with the drafts on it -- no list to click through first.
     $this->actingAs($user)
         ->get(route('portal.dashboard'))
-        ->assertRedirect(route('portal.projects.show', $only));
+        ->assertOk()
+        ->assertSee('Einziges Projekt')
+        ->assertSee('Entwurf 1')
+        ->assertSee('Entwurf ansehen');
 });
 
 it('shows a customer the available previews of their own project', function () {
@@ -57,10 +62,10 @@ it('shows a customer the available previews of their own project', function () {
     // A preview that is not available is not offered to the customer at all.
     $response->assertDontSee('Interner Entwurf');
 
-    // The entry in the list is the preview itself, not a page in front of it.
-    $response->assertSee('https://'.$available->hostname, escape: false);
+    // The button goes through the portal, which checks access again at the
+    // moment of the click and then sends the customer straight on.
+    $response->assertSee(route('portal.previews.show', [$project, $available]), escape: false);
 
-    // And the route that older mails link to goes straight there as well.
     $this->actingAs($user)
         ->get(route('portal.previews.show', [$project, $available]))
         ->assertRedirect('https://'.$available->hostname);
@@ -208,3 +213,23 @@ it('sends guests to the login page instead of leaking anything', function () {
     $this->get(route('portal.projects.show', $project))->assertRedirect(route('login'));
     $this->get(route('portal.previews.show', [$project, $preview]))->assertRedirect(route('login'));
 });
+
+/* ---------------------------------------------------------------- greeting */
+
+it('greets by time of day in the display time zone, without a name', function (string $berlinTime, string $greeting) {
+    $user = $this->customerUser(attributes: ['name' => 'Max Schneider']);
+
+    Carbon::setTestNow(
+        Carbon::parse('2026-10-02 '.$berlinTime, 'Europe/Berlin')
+    );
+
+    $html = $this->actingAs($user)->get(route('portal.dashboard'))->assertOk()->getContent();
+
+    expect($html)->toMatch('#<h1[^>]*>\s*'.$greeting.'\s*</h1>#');
+
+    Carbon::setTestNow();
+})->with([
+    ['08:00', 'Guten Morgen'],
+    ['14:00', 'Guten Tag'],
+    ['21:30', 'Guten Abend'],
+]);

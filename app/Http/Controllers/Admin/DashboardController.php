@@ -6,6 +6,7 @@ use App\Enums\PreviewStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Invitation;
 use App\Models\Preview;
+use App\Models\PreviewFeedback;
 use App\Models\Project;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -21,6 +22,11 @@ class DashboardController extends Controller
     {
         return view('admin.dashboard', [
             'openPreviews' => $this->openPreviews(),
+            'recentFeedback' => PreviewFeedback::query()
+                ->with(['preview.project.customer', 'user'])
+                ->latest()
+                ->take(6)
+                ->get(),
             'pendingInvitations' => Invitation::query()->pending()->with('customer')->latest()->take(5)->get(),
             'recentProjects' => Project::query()->with('customer')->latest()->take(5)->get(),
         ]);

@@ -15,9 +15,11 @@ where they already work.
 ## Screens in one paragraph
 
 An administrator creates customers, projects and previews, and invites the
-people who may see them. A customer signs in, lands on their project, and clicks
-a preview open in a new tab. There is no public sign-up: accounts exist only
-because somebody was invited.
+people who may see them. A customer signs in and lands on a single page — "Guten Morgen", "Guten
+Tag" or "Guten Abend", then every draft as a card with a screenshot, one big **Entwurf ansehen** button, and two
+answers — **Passt so** or **Änderung wünschen** (with an optional comment). The
+administrator sees the answers on the project page and the dashboard. There is
+no public sign-up: accounts exist only because somebody was invited.
 
 ## Stack
 
@@ -29,6 +31,8 @@ because somebody was invited.
 | Frontend | Blade + Tailwind CSS 4, ~20 lines of own JavaScript |
 | Tests | Pest 5 / PHPUnit 13 against real PostgreSQL |
 | Development | Docker Compose, Mailpit for mail |
+| Background jobs | Laravel queue on the database, `worker` service |
+| Thumbnails | `playwright-core` + Chromium, run by the worker only |
 
 A Laravel monolith. No REST API, no SPA framework, no Redis, no microservices,
 no external services, no CDNs.
@@ -62,6 +66,10 @@ docker compose build --build-arg UID=$(id -u) --build-arg GID=$(id -g) app
 ./sg npm install
 ./sg npm run build
 ```
+
+The `worker` service (part of `./sg up`) runs queued jobs — today only the
+preview thumbnails. Without it, previews still work; the cards show a
+placeholder until a worker picks the job up.
 
 Then:
 
@@ -140,7 +148,8 @@ uid/gid:
 client users, resends invitations, blocks accounts, sees everything.
 
 **Customer** — signs in, changes their own password, sees only their own
-projects and previews. No write access of any kind.
+projects and previews, and answers each draft with "Passt so" or "Änderung
+wünschen". No other write access.
 
 There is **no public registration**. Accounts come into existence only through
 an administrator's invitation.
@@ -207,7 +216,9 @@ personal data are written to the log.
 in `config/previews.php`. Path traversal is resolved lexically; existing paths
 are additionally checked against symlinks with `realpath()`. Upstream URLs must
 be HTTPS and use an allow-listed host with no IP literal, no credentials and no
-unexpected port. Customers never see a target and can never influence one.
+unexpected port. Customers can never influence a target. They never see a
+directory path; an upstream URL is the address they are sent to, and it is
+checked against the allowlist again on every redirect.
 
 These checks are input validation, not complete SSRF defence: hostnames are not
 resolved, private or loopback addresses behind an allowed name are not detected,
@@ -238,6 +249,99 @@ including the security problems of session cookies across several subdomains:
 
 An administrator creates a preview as a draft and releases it with
 **Bereitstellen**; the status is the result of that action, never a form field.
+
+### Two kinds of address
+
+- **Static directory** — opened at its own subdomain below
+  `PREVIEW_BASE_DOMAIN`, which it needs before it can be released.
+- **Upstream URL** — opened at that URL, path included, e.g.
+  `https://customer.example.com/joinery-holzmann`. No subdomain needed; the
+  host must be listed in `PREVIEW_ALLOWED_UPSTREAM_HOSTS`.
+
+Either way the customer clicks through the portal route, which checks access
+and status first and only then redirects. Smallgate protects the way *to* the
+preview, not the preview itself: whoever knows an upstream URL can open it,
+unless the server it lives on asks for credentials of its own. Treat such
+paths as unlisted, not as secret.
+
+### Versions and feedback
+
+Every successful **Bereitstellen** publishes a new *version* of the preview.
+The customer is asked for feedback per version: after a re-provisioning the
+card shows "Ihre Rückmeldung fehlt" again. Feedback is stored in
+`preview_feedback` with the version it refers to; the form's version is only
+compared, never trusted — if a newer version went live meanwhile, the answer
+is refused with a hint to look again. Customers can only answer previews they
+are offered (anything else is a 404); administrators read feedback but cannot
+give it.
+
+### Thumbnails
+
+Previews are websites (a static directory or an allow-listed upstream URL);
+there are no PDF or image previews in Smallgate. Each published version gets
+one screenshot:
+
+- **When:** queued on provisioning, or by **Vorschaubild neu erstellen** on the
+  project page, or for all missing ones with `./sg artisan previews:thumbnails`
+  (`--all` redoes existing ones). Never on a page view.
+- **How:** `App\Jobs\GeneratePreviewThumbnail` → `PreviewScreenshotter` →
+  `scripts/preview-screenshot.mjs`. Viewport 1440 × 900, stored as a 720 × 450
+  JPEG. "Ready" means: load event, network quiet (bounded), `document.fonts`
+  loaded, images in the first screen decoded, two painted frames. A preview
+  that renders on the client can opt into an explicit signal: put
+  `data-smallgate-wait` on `<html>` and set `data-smallgate-ready` when done.
+  Overall timeout: `PREVIEW_THUMBNAIL_TIMEOUT`.
+- **Versioning:** the picture is stored with the version it shows. A job for a
+  superseded version does nothing; a result that arrives after a newer version
+  went live is discarded. A picture of an older version counts as stale: the
+  customer never sees it (placeholder instead), the administrator sees it
+  marked "Veraltet".
+- **Failure:** the card shows a placeholder ("Website-Entwurf" + name), the
+  preview stays reachable. The log gets the preview id, the version and a
+  reason code (`timeout`, `target_missing`, `address_not_public`, …) — never a
+  target, URL or token.
+- **Access:** files live on the private `local` disk and are served only
+  through the portal route (same scope and policy as the preview, current
+  version, available status only) and the admin route.
+
+What the browser may open — the target is re-checked with
+`PreviewTargetGuard` right before the browser starts, then:
+
+- *Static directory:* served to Chromium from disk under a fixed, unresolvable
+  origin by the script's request handler, with its own traversal and symlink
+  checks. Nothing touches the network.
+- *Upstream URL:* the host is resolved in PHP, every address must be globally
+  routable (`FILTER_FLAG_GLOBAL_RANGE`), and Chromium is pinned to the checked
+  address with `--host-resolver-rules`, so DNS rebinding cannot redirect it.
+  Only HTTPS requests to that host pass; assets from CDNs are blocked, so such
+  a thumbnail may lack external fonts or images.
+- In both modes every other request is aborted, and — because redirects and
+  IP literals bypass the request handler — Chromium additionally runs behind a
+  proxy that does not exist (loopback included) with a resolver that knows no
+  other name. Each layer alone was verified to stop a redirect to a loopback
+  server.
+
+Chromium's own process sandbox is on as well (`PREVIEW_THUMBNAIL_SANDBOX`),
+so a page that exploits the renderer is still confined to namespaces and a
+seccomp filter instead of reaching the container, which holds the whole
+project including `.env`. Docker's default seccomp profile refuses the
+namespaces the sandbox needs, so the `worker` service runs with
+`docker/seccomp/chromium.json`: Docker's default profile plus `clone`,
+`setns` and `unshare`, nothing else. After launch the script checks
+`chrome://sandbox`; without a working sandbox it refuses with
+`sandbox_unavailable` instead of rendering unprotected. The `app` container has
+no such profile — previews are never rendered there. (Alpine's Chromium 152
+additionally needs `--disable-gpu-shader-disk-cache` under the sandbox; see the
+comment in the script.)
+
+External hosts stay blocked on purpose: an upstream preview is expected to
+live entirely on its own host, e.g. `https://customer.example.com/joinery`.
+
+**Installation:** the app image installs Alpine's `chromium`, `nodejs` and
+`font-noto` (Playwright's own browser builds do not run on Alpine);
+`playwright-core` comes with `./sg npm install`. Outside Docker, install Node,
+run `npm install` and either point `PREVIEW_THUMBNAIL_CHROMIUM` at a Chromium
+binary or leave it empty and run `npx playwright install chromium`.
 
 ## Tests
 
@@ -296,18 +400,20 @@ legal review before you go live.
 app/
 ├── Contracts/          PreviewProvisioner -- the only real system boundary
 ├── Enums/              UserRole, ProjectStatus, PreviewStatus, PreviewTargetType
+├── Jobs/               GeneratePreviewThumbnail
 ├── Http/
 │   ├── Controllers/    Auth, Admin, Portal, Profile, Legal
 │   ├── Middleware/     EnsureUserIsAdmin, EnsureAccountIsActive
 │   └── Requests/       server-side validation
-├── Models/             User, Customer, Project, Preview, Invitation
+├── Models/             User, Customer, Project, Preview, PreviewFeedback, Invitation
 ├── Notifications/      invitation, password reset
 ├── Policies/           explicit, without a blanket Gate::before
 ├── Rules/              PreviewHostname, AllowedPreviewTarget
 └── Services/
     ├── InvitationService.php
-    └── Previews/       NullPreviewProvisioner, PreviewTargetGuard
+    └── Previews/       NullPreviewProvisioner, PreviewTargetGuard, PreviewScreenshotter
 docker/                 PHP image, nginx, PostgreSQL init
+scripts/                preview-screenshot.mjs (Playwright, run by the worker)
 docs/adr/               architecture decision records
 ```
 

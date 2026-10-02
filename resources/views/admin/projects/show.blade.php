@@ -63,13 +63,13 @@
                             <div class="min-w-0">
                                 <h3 class="text-base font-semibold text-white">{{ $preview->name }}</h3>
                                 {{-- Administrators may open a preview in any status, not just an available one. --}}
-                                @if ($url = $preview->hostUrl())
+                                @if ($url = $preview->openUrl())
                                     <a href="{{ $url }}" target="_blank" rel="noopener noreferrer"
                                        class="mt-1 block font-mono text-xs sg-muted hover:text-accent">
-                                        {{ $preview->hostname }}
+                                        {{ $preview->displayAddress() }}
                                     </a>
                                 @else
-                                    <p class="mt-1 font-mono text-xs sg-faint">kein Hostname hinterlegt</p>
+                                    <p class="mt-1 font-mono text-xs sg-faint">keine Adresse hinterlegt</p>
                                 @endif
                             </div>
                             <span class="sg-badge {{ $preview->status->badgeClasses() }}">
@@ -84,10 +84,68 @@
                             </div>
                             <div class="sm:col-span-2">
                                 <dt class="sg-muted">Ziel</dt>
-                                {{-- Only ever shown to administrators. --}}
+                                {{-- Shown to administrators. A directory path never reaches a
+                                     customer; an upstream URL is the address they open. --}}
                                 <dd class="truncate font-mono text-xs text-white/70">{{ $preview->target ?? '–' }}</dd>
                             </div>
                         </dl>
+
+                        <div class="mt-4 grid gap-4 border-t border-white/5 pt-4 sm:grid-cols-[14rem_minmax(0,1fr)]">
+                            <div>
+                                <div class="relative aspect-[16/10] overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/10">
+                                    @if ($preview->thumbnail_path)
+                                        <img src="{{ route('admin.projects.previews.thumbnail', [$project, $preview, 'v' => $preview->thumbnail_generated_at?->timestamp]) }}"
+                                             alt="Vorschaubild {{ $preview->name }}" loading="lazy"
+                                             @class(['size-full object-cover object-top', 'opacity-40' => $preview->hasStaleThumbnail()])>
+                                    @else
+                                        <div class="flex size-full items-center justify-center p-3 text-center text-xs sg-faint">
+                                            Kein Vorschaubild
+                                        </div>
+                                    @endif
+                                    @if ($preview->hasStaleThumbnail())
+                                        <span class="absolute inset-x-2 bottom-2 rounded bg-amber-400/90 px-2 py-1 text-center
+                                                     text-xs font-semibold text-ground">
+                                            Veraltet (Version {{ $preview->thumbnail_version }})
+                                        </span>
+                                    @endif
+                                </div>
+                                <p class="mt-2 text-xs sg-faint">
+                                    Version {{ $preview->version }}
+                                    @if ($preview->thumbnail_status)
+                                        · Vorschaubild: {{ $preview->thumbnail_status->label() }}
+                                    @endif
+                                </p>
+                            </div>
+
+                            <div class="min-w-0">
+                                <h4 class="text-sm font-semibold text-white">Rückmeldungen</h4>
+                                @if ($preview->feedback->isEmpty())
+                                    <p class="mt-2 text-sm sg-faint">
+                                        {{ $preview->status === \App\Enums\PreviewStatus::Available ? 'Noch keine Rückmeldung des Kunden.' : 'Keine.' }}
+                                    </p>
+                                @else
+                                    <ul class="mt-2 space-y-2">
+                                        @foreach ($preview->feedback->take(5) as $feedback)
+                                            <li @class(['text-sm', 'opacity-60' => $feedback->preview_version !== $preview->version])>
+                                                <span @class([
+                                                    'sg-badge',
+                                                    'bg-accent/10 text-accent ring-accent/30' => $feedback->decision === \App\Enums\FeedbackDecision::Approved,
+                                                    'bg-amber-400/10 text-amber-300 ring-amber-400/30' => $feedback->decision === \App\Enums\FeedbackDecision::ChangesRequested,
+                                                ])>{{ $feedback->decision->label() }}</span>
+                                                <span class="text-xs sg-faint">
+                                                    Version {{ $feedback->preview_version }} ·
+                                                    {{ $feedback->user->name }} ·
+                                                    {{ $feedback->created_at->timezone(config('smallgate.display_timezone'))->format('d.m.Y H:i') }}
+                                                </span>
+                                                @if ($feedback->comment)
+                                                    <p class="mt-1 whitespace-pre-line text-sm text-white/70">{{ $feedback->comment }}</p>
+                                                @endif
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                            </div>
+                        </div>
 
                         @if ($preview->status === \App\Enums\PreviewStatus::Available && $preview->needsProvisioning())
                             <p class="mt-4 rounded-lg bg-amber-400/10 px-3 py-2 text-xs text-amber-200
@@ -110,6 +168,12 @@
                                       action="{{ route('admin.projects.previews.disable', [$project, $preview]) }}">
                                     @csrf
                                     <button type="submit" class="sg-btn-secondary">Deaktivieren</button>
+                                </form>
+
+                                <form method="POST"
+                                      action="{{ route('admin.projects.previews.thumbnail.regenerate', [$project, $preview]) }}">
+                                    @csrf
+                                    <button type="submit" class="sg-btn-secondary">Vorschaubild neu erstellen</button>
                                 </form>
                             @endif
 

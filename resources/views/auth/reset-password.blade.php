@@ -3,11 +3,11 @@
 @section('title', 'Passwort zurücksetzen')
 
 @section('card')
-    <h1 class="font-display text-xl font-bold text-white">Neues Passwort vergeben</h1>
+    <h1 class="text-2xl font-bold">Neues Passwort vergeben</h1>
 
-    <x-errors />
+    <div class="mt-5"><x-errors /></div>
 
-    <form method="POST" action="{{ route('password.store') }}" class="mt-6 space-y-4">
+    <form method="POST" action="{{ route('password.store') }}" class="space-y-5">
         @csrf
         <input type="hidden" name="token" value="{{ $token }}">
 
@@ -17,7 +17,7 @@
         <x-field name="password" label="Neues Passwort" type="password" required
                  autocomplete="new-password" hint="Mindestens 12 Zeichen." />
 
-        <x-field name="password_confirmation" label="Neues Passwort bestätigen" type="password" required
+        <x-field name="password_confirmation" label="Neues Passwort wiederholen" type="password" required
                  autocomplete="new-password" />
 
         <button type="submit" class="sg-btn-primary w-full">Passwort speichern</button>

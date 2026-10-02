@@ -5,6 +5,7 @@ namespace App\Services\Previews;
 use App\Contracts\PreviewProvisioner;
 use App\Contracts\PreviewProvisioningResult;
 use App\Enums\PreviewStatus;
+use App\Enums\PreviewTargetType;
 use App\Models\Preview;
 use Illuminate\Support\Facades\Log;
 
@@ -27,7 +28,9 @@ class NullPreviewProvisioner implements PreviewProvisioner
 
     public function provision(Preview $preview): PreviewProvisioningResult
     {
-        if ($preview->hostname === null) {
+        // A static directory is only reachable through its subdomain; an
+        // upstream preview is opened at its own URL.
+        if ($preview->hostname === null && $preview->target_type === PreviewTargetType::StaticDirectory) {
             return PreviewProvisioningResult::failure(
                 'Die Vorschau hat keinen Hostnamen und kann nicht bereitgestellt werden.'
             );

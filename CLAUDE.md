@@ -14,6 +14,9 @@ E-Mail. Features außerhalb des MVP nicht hinzufügen.
 - Blade + Tailwind CSS 4, minimal JavaScript (nur Mobile-Nav-Toggle)
 - Pest 5 / PHPUnit 13, Tests gegen echtes PostgreSQL (nicht SQLite)
 - Docker Compose, Mailpit
+- Queue: Datenbank-Treiber, Worker-Service `worker` in Compose
+- Vorschaubilder: `playwright-core` + Alpine-Chromium, ausschließlich im
+  Queue-Worker (`scripts/preview-screenshot.mjs`), nie im Browser des Kunden
 
 Keine REST-API, kein React/Angular/Vue, kein Redis, keine Microservices, keine
 externen Dienste, keine CDNs.
@@ -45,7 +48,9 @@ oder `artisan` direkt auf dem Host aufrufen. Immer `./sg`:
 - Niemals eigene Kryptografie oder eigenes Passwort-Hashing. Argon2id über
   Laravels `Hash`-Fassade.
 - `role`, `customer_id`, `is_active`, `project_id`, `provisioned_at` sind
-  **nie** `$fillable`. Immer explizit in Admin-Code zuweisen.
+  **nie** `$fillable`. Immer explizit in Admin-Code zuweisen. Ebenso
+  `previews.version`, die `thumbnail_*`-Spalten und bei Rückmeldungen
+  `preview_id`, `user_id`, `preview_version`.
 - Fremde oder unbekannte IDs → **404**, niemals 403. Ein 403 bestätigt die
   Existenz der Ressource.
 - Sichtbarkeitsprüfungen laufen über `Project::visibleTo()` bzw.
@@ -58,6 +63,14 @@ oder `artisan` direkt auf dem Host aufrufen. Immer `./sg`:
 - `SESSION_DOMAIN` bleibt leer. Siehe ADR 0001.
 - Preview-Ziele nur aus der Allowlist in `config/previews.php`. Änderungen an
   `PreviewTargetGuard` brauchen begleitende Tests.
+- Der Screenshot-Browser öffnet nur das geprüfte Ziel: statische Verzeichnisse
+  ohne Netzwerk, Upstream-URLs auf die geprüfte öffentliche IP gepinnt, alles
+  andere blockiert (Request-Handler, toter Proxy, Resolver-Regeln). Chromiums
+  Sandbox bleibt an; der Worker braucht dafür `docker/seccomp/chromium.json`.
+  Nie `--no-sandbox` oder `seccomp=unconfined` als Abkürzung. Änderungen an
+  `PreviewScreenshotter` oder dem Skript brauchen begleitende Tests.
+- Vorschaubilder liegen auf der privaten Disk und werden nur über autorisierte
+  Routen ausgeliefert – Kunden nur das Bild der aktuellen Version.
 
 ## Preview-Provisioning
 

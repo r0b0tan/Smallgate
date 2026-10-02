@@ -82,6 +82,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Display Time Zone
+    |--------------------------------------------------------------------------
+    |
+    | Timestamps are stored in UTC. The customer portal shows dates -- and picks
+    | "Guten Morgen" or "Guten Abend" -- in this zone.
+    |
+    */
+
+    'display_timezone' => env('DISPLAY_TIMEZONE', 'Europe/Berlin'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Legal Pages
     |--------------------------------------------------------------------------
     |

@@ -5,14 +5,18 @@ namespace App\Http\Controllers\Admin;
 use App\Contracts\PreviewProvisioner;
 use App\Enums\PreviewStatus;
 use App\Enums\PreviewTargetType;
+use App\Enums\ThumbnailStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StorePreviewRequest;
 use App\Http\Requests\Admin\UpdatePreviewRequest;
+use App\Jobs\GeneratePreviewThumbnail;
 use App\Models\Preview;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Previews are always addressed through their project, so a preview of another
@@ -118,12 +122,72 @@ class PreviewController extends Controller
             // what tells the administrator that the stored configuration has
             // drifted from what was last provisioned.
             $preview->updated_at = $now;
+
+            // What the customer sees now is a new version: it asks for fresh
+            // feedback and gets its own thumbnail.
+            $preview->publishNewVersion();
         }
 
         $preview->save();
 
+        if (! $result->successful) {
+            return redirect()->route('admin.projects.show', $project)->with('error', $result->message);
+        }
+
+        GeneratePreviewThumbnail::for($preview);
+
         return redirect()->route('admin.projects.show', $project)
-            ->with($result->successful ? 'status' : 'error', $result->message);
+            ->with('status', $result->message.' Version '.$preview->version.' ist für den Kunden sichtbar.');
+    }
+
+    /**
+     * Queue a new screenshot of the current version, e.g. after a failure or
+     * when files changed without a new provisioning.
+     */
+    public function regenerateThumbnail(Project $project, Preview $preview): RedirectResponse
+    {
+        $this->authorize('managePreviews', $project);
+        $this->ensureBelongsToProject($project, $preview);
+
+        if (! config('previews.thumbnails.enabled')) {
+            return redirect()->route('admin.projects.show', $project)
+                ->with('error', 'Vorschaubilder sind in der Konfiguration abgeschaltet.');
+        }
+
+        if (! $preview->status->isVisitable() || $preview->version < 1) {
+            return redirect()->route('admin.projects.show', $project)
+                ->with('error', 'Ein Vorschaubild wird erst nach der Bereitstellung erstellt.');
+        }
+
+        // Through the query builder: thumbnail state must not move updated_at,
+        // which would wrongly report a configuration change.
+        Preview::query()->whereKey($preview->id)->toBase()
+            ->update(['thumbnail_status' => ThumbnailStatus::Pending->value]);
+
+        GeneratePreviewThumbnail::for($preview);
+
+        return redirect()->route('admin.projects.show', $project)
+            ->with('status', 'Das Vorschaubild wird im Hintergrund neu erstellt.');
+    }
+
+    /**
+     * The stored thumbnail, current or stale. Administrators see a stale one
+     * too, marked as such on the project page; customers never do.
+     */
+    public function thumbnail(Project $project, Preview $preview): StreamedResponse
+    {
+        $this->authorize('managePreviews', $project);
+        $this->ensureBelongsToProject($project, $preview);
+
+        $disk = Storage::disk(config('previews.thumbnails.disk'));
+
+        abort_if($preview->thumbnail_path === null || ! $disk->exists($preview->thumbnail_path), 404);
+
+        return $disk->response($preview->thumbnail_path, 'vorschau.jpg', [
+            'Content-Type' => 'image/jpeg',
+            'Cache-Control' => 'private, max-age=3600',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     /**

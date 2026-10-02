@@ -6,6 +6,7 @@ use App\Enums\PreviewStatus;
 use App\Enums\PreviewTargetType;
 use App\Enums\ProjectStatus;
 use App\Enums\UserRole;
+use App\Jobs\GeneratePreviewThumbnail;
 use App\Models\Customer;
 use App\Models\Preview;
 use App\Models\Project;
@@ -170,13 +171,26 @@ class DatabaseSeeder extends Seeder
 
             $preview->hostname = $subdomain.'.'.config('previews.base_domain');
             // Always inside an allow-listed root -- the same rule the admin
-            // form and the provisioner enforce.
-            $preview->target = rtrim((string) ($roots[0] ?? '/srv/previews'), '/').'/'.$subdomain.'/'.$slug;
+            // form and the provisioner enforce. The directory is the one the
+            // local preview mock serves for this subdomain, so the thumbnail
+            // shows the same page.
+            $preview->target = rtrim((string) ($roots[0] ?? '/srv/previews'), '/').'/'.$subdomain;
         }
 
         $preview->project_id = $project->id;
-        $preview->provisioned_at = $status === PreviewStatus::Available ? now() : null;
+        $preview->provisioned_at = null;
+
+        if ($status === PreviewStatus::Available) {
+            $preview->provisioned_at = now();
+            $preview->publishNewVersion();
+        }
+
         $preview->save();
+
+        // Queued like a real provisioning; the worker takes the screenshot.
+        if ($status === PreviewStatus::Available) {
+            GeneratePreviewThumbnail::for($preview);
+        }
 
         return $preview;
     }

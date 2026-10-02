@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\PreviewStatus;
 use App\Enums\PreviewTargetType;
+use App\Enums\ThumbnailStatus;
 use App\Models\Preview;
 use App\Models\Project;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -35,7 +36,35 @@ class PreviewFactory extends Factory
             'target' => null,
             'status' => PreviewStatus::Draft,
             'provisioned_at' => null,
+            'version' => 0,
         ];
+    }
+
+    /**
+     * A released preview opened at its upstream URL, path included, on the
+     * test environment's allow-listed host. No subdomain of its own.
+     */
+    public function upstream(string $path = 'zimmerei-holzmann'): static
+    {
+        return $this->available()->state(fn () => [
+            'hostname' => null,
+            'target_type' => PreviewTargetType::UpstreamUrl,
+            'target' => 'https://'.((array) config('previews.allowed_upstream_hosts'))[0].'/'.$path,
+        ]);
+    }
+
+    /**
+     * A ready thumbnail for the preview's current version. The file itself is
+     * up to the test.
+     */
+    public function withThumbnail(string $path = 'preview-thumbnails/test/v1.jpg'): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'thumbnail_status' => ThumbnailStatus::Ready,
+            'thumbnail_version' => $attributes['version'] ?? 1,
+            'thumbnail_path' => $path,
+            'thumbnail_generated_at' => now(),
+        ]);
     }
 
     public function for_project(Project $project): static
@@ -59,6 +88,7 @@ class PreviewFactory extends Factory
                 'target' => rtrim((string) ($root[0] ?? '/srv/previews'), '/').'/'.$slug,
                 'status' => PreviewStatus::Available,
                 'provisioned_at' => now(),
+                'version' => 1,
             ];
         });
     }

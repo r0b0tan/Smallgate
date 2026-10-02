@@ -128,6 +128,10 @@ Route::middleware(['auth', 'admin'])
             ->name('projects.previews.provision');
         Route::post('projekte/{project}/vorschauen/{preview}/deaktivieren', [Admin\PreviewController::class, 'disable'])
             ->name('projects.previews.disable');
+        Route::get('projekte/{project}/vorschauen/{preview}/vorschaubild', [Admin\PreviewController::class, 'thumbnail'])
+            ->name('projects.previews.thumbnail');
+        Route::post('projekte/{project}/vorschauen/{preview}/vorschaubild', [Admin\PreviewController::class, 'regenerateThumbnail'])
+            ->name('projects.previews.thumbnail.regenerate');
     });
 
 /*
@@ -135,8 +139,9 @@ Route::middleware(['auth', 'admin'])
 | Customer portal
 |--------------------------------------------------------------------------
 |
-| Read only. Project and preview ids are resolved through the visibility scope,
-| so anything the signed-in user may not see is simply "not found".
+| Read only, with one exception: the customer's answer to a draft. Project and
+| preview ids are resolved through the visibility scope, so anything the
+| signed-in user may not see is simply "not found".
 |
 */
 
@@ -148,4 +153,11 @@ Route::middleware('auth')
         Route::get('projekte/{project}', [Portal\ProjectController::class, 'show'])->name('projects.show');
         Route::get('projekte/{project}/vorschauen/{preview}', [Portal\ProjectController::class, 'showPreview'])
             ->name('previews.show');
+        Route::get('projekte/{project}/vorschauen/{preview}/vorschaubild', [Portal\ProjectController::class, 'thumbnail'])
+            ->name('previews.thumbnail');
+        Route::get('projekte/{project}/vorschauen/{preview}/aenderung', [Portal\FeedbackController::class, 'create'])
+            ->name('previews.feedback.create');
+        Route::post('projekte/{project}/vorschauen/{preview}/rueckmeldung', [Portal\FeedbackController::class, 'store'])
+            ->middleware('throttle:20,1')
+            ->name('previews.feedback.store');
     });

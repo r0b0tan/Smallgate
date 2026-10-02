@@ -20,6 +20,25 @@
     --color-surface-raised: #181818;
     --color-accent: #ccff00;
     --color-accent-soft: #e2ff66;
+
+    /*
+     * The customer-facing pages (portal, sign-in, invitation) use a calm light
+     * theme instead: many customers are not technical, some read on an older
+     * phone in daylight. Every text colour below clears WCAG AA on white and
+     * on the paper ground.
+     */
+    --color-paper: #f4f6f5;
+    --color-ink: #17212b;        /* ~16:1 */
+    --color-ink-muted: #4b5866;  /* ~7.2:1 */
+    --color-line: #dfe5e2;
+    --color-brand: #1d6b5c;      /* ~6.3:1, white on it ~6.3:1 */
+    --color-brand-dark: #154f44;
+    --color-brand-soft: #e6f2ee;
+    --color-brand-tint: #f2f8f6;
+
+    /* Layered, soft elevation instead of a hard border. */
+    --shadow-card: 0 1px 2px rgb(16 24 32 / 0.04), 0 12px 32px -12px rgb(16 24 32 / 0.12);
+    --shadow-lift: 0 2px 4px rgb(16 24 32 / 0.06), 0 20px 40px -16px rgb(16 24 32 / 0.22);
 }
 
 @layer base {
@@ -42,6 +61,30 @@
     :focus-visible {
         outline: 2px solid var(--color-accent);
         outline-offset: 2px;
+    }
+
+    html.theme-light {
+        color-scheme: light;
+    }
+
+    .theme-light body {
+        /* A faint brand glow at the top -- depth without decoration. */
+        background:
+            radial-gradient(60rem 28rem at 15% -8rem, rgb(29 107 92 / 0.10), transparent 70%),
+            radial-gradient(48rem 24rem at 95% -6rem, rgb(214 168 76 / 0.08), transparent 70%),
+            var(--color-paper);
+        background-repeat: no-repeat;
+        color: var(--color-ink);
+        font-size: 1.0625rem; /* 17px: comfortable for every age */
+    }
+
+    .theme-light :is(h1, h2, h3, h4) {
+        color: var(--color-ink);
+    }
+
+    .theme-light :focus-visible {
+        outline: 3px solid var(--color-brand);
+        outline-offset: 3px;
     }
 }
 
@@ -100,5 +143,123 @@
     .sg-badge {
         @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs
                font-medium ring-1 ring-inset;
+    }
+
+    .sg-link {
+        @apply text-accent hover:text-accent-soft;
+    }
+
+    .sg-error {
+        @apply text-red-300;
+    }
+
+    .sg-required {
+        @apply text-accent;
+    }
+
+    .sg-value {
+        @apply text-white/70;
+    }
+
+    .sg-divider {
+        @apply border-white/5;
+    }
+
+    .sg-alert-status {
+        @apply rounded-lg bg-accent/10 px-4 py-3 text-sm text-accent ring-1 ring-inset ring-accent/30;
+    }
+
+    .sg-alert-error {
+        @apply rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-300 ring-1 ring-inset ring-red-500/30;
+    }
+
+    .sg-alert-notice {
+        @apply rounded-lg bg-amber-400/10 px-4 py-3 text-sm text-amber-200 ring-1 ring-inset ring-amber-400/30;
+    }
+
+    /* ---------------------------------------------------------- light theme */
+
+    .theme-light .sg-card {
+        @apply rounded-3xl bg-white shadow-card ring-ink/5;
+    }
+
+    .theme-light .sg-field {
+        @apply bg-white px-4 py-3 text-base text-ink ring-line placeholder:text-ink-muted/70
+               focus:ring-brand;
+    }
+
+    .theme-light .sg-label {
+        @apply text-base font-semibold text-ink;
+    }
+
+    .theme-light .sg-muted {
+        @apply text-ink-muted;
+    }
+
+    .theme-light .sg-faint {
+        @apply text-ink-muted;
+    }
+
+    .theme-light .sg-link {
+        @apply font-semibold text-brand underline-offset-4 hover:text-brand-dark hover:underline;
+    }
+
+    .theme-light .sg-error {
+        @apply text-red-700;
+    }
+
+    .theme-light .sg-required {
+        @apply text-brand;
+    }
+
+    .theme-light .sg-value {
+        @apply text-ink;
+    }
+
+    .theme-light .sg-divider {
+        @apply border-line;
+    }
+
+    .theme-light .sg-alert-status {
+        @apply rounded-xl bg-brand-soft px-5 py-4 text-base text-brand-dark ring-brand/30;
+    }
+
+    .theme-light .sg-alert-error {
+        @apply rounded-xl bg-red-50 px-5 py-4 text-base text-red-800 ring-red-200;
+    }
+
+    .theme-light .sg-alert-notice {
+        @apply rounded-xl bg-amber-50 px-5 py-4 text-base text-amber-900 ring-amber-200;
+    }
+
+    .theme-light .sg-btn-primary {
+        @apply min-h-12 rounded-xl bg-brand px-6 text-base text-white hover:bg-brand-dark;
+    }
+
+    .theme-light .sg-btn-secondary {
+        @apply min-h-12 rounded-xl bg-white px-5 text-base text-brand ring-line hover:bg-brand-soft;
+    }
+
+    /* The one big button on a draft card: unmistakably the thing to press. */
+    .sg-btn-cta {
+        @apply inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-brand px-7
+               text-lg font-semibold text-white shadow-lg shadow-brand/20 transition
+               hover:bg-brand-dark active:scale-[0.98] sm:w-auto;
+    }
+
+    /* "Passt so" / "Änderung wünschen": two equal tiles, icon plus a short
+       line saying what happens -- neither looks like the default. */
+    .sg-choice {
+        @apply flex min-h-20 w-full items-center gap-4 rounded-2xl bg-white p-4 text-left ring-1 ring-inset
+               ring-line transition hover:-translate-y-0.5 hover:shadow-card hover:ring-brand/40
+               active:translate-y-0;
+    }
+
+    .sg-chip {
+        @apply inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold ring-1 ring-inset;
+    }
+
+    .sg-eyebrow {
+        @apply text-sm font-semibold uppercase tracking-[0.08em] text-ink-muted;
     }
 }

@@ -10,7 +10,7 @@
 
 <div>
     <label for="{{ $name }}" class="sg-label">
-        {{ $label }}@if ($required)<span class="text-accent"> *</span>@endif
+        {{ $label }}@if ($required)<span class="sg-required"> *</span>@endif
     </label>
 
     <div class="mt-1">
@@ -33,6 +33,6 @@
     @endif
 
     @error($name)
-        <p class="mt-1 text-xs text-red-300">{{ $message }}</p>
+        <p class="mt-1 text-sm sg-error">{{ $message }}</p>
     @enderror
 </div>

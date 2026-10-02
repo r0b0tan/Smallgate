@@ -25,6 +25,16 @@ RUN php -r 'exit(defined("PASSWORD_ARGON2ID") ? 0 : 1);' \
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+# Preview thumbnails: scripts/preview-screenshot.mjs drives Chromium through
+# playwright-core (installed with `npm install`). Playwright's own browser
+# builds do not run on Alpine, so the distribution's Chromium is used instead;
+# config('previews.thumbnails.chromium') points at it. Noto covers the fonts a
+# preview does not bring itself.
+RUN apk add --no-cache \
+        chromium \
+        font-noto \
+        nodejs
+
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/99-smallgate.ini
 
 # Create a user whose uid matches the host user, so files written by artisan or

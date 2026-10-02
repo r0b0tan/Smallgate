@@ -66,6 +66,41 @@
     </div>
 
     <div class="mt-6 sg-card">
+        <h2 class="text-lg font-semibold text-white">Neueste Rückmeldungen</h2>
+        <p class="mt-1 text-xs sg-faint">Was Kunden zu ihren Entwürfen gesagt haben.</p>
+
+        @if ($recentFeedback->isEmpty())
+            <div class="mt-4"><x-empty message="Noch keine Rückmeldungen." /></div>
+        @else
+            <ul class="mt-4 divide-y divide-white/5">
+                @foreach ($recentFeedback as $feedback)
+                    <li class="flex flex-wrap items-start justify-between gap-4 py-3">
+                        <div class="min-w-0">
+                            <a href="{{ route('admin.projects.show', $feedback->preview->project) }}"
+                               class="block truncate text-sm font-medium text-white hover:text-accent">
+                                {{ $feedback->preview->name }}
+                                <span class="sg-faint">· Version {{ $feedback->preview_version }}</span>
+                            </a>
+                            <p class="truncate text-xs sg-faint">
+                                {{ $feedback->preview->project->customer->name }} · {{ $feedback->user->name }} ·
+                                {{ $feedback->created_at->timezone(config('smallgate.display_timezone'))->format('d.m.Y H:i') }}
+                            </p>
+                            @if ($feedback->comment)
+                                <p class="mt-1 line-clamp-2 text-sm text-white/70">{{ $feedback->comment }}</p>
+                            @endif
+                        </div>
+                        <span @class([
+                            'sg-badge',
+                            'bg-accent/10 text-accent ring-accent/30' => $feedback->decision === \App\Enums\FeedbackDecision::Approved,
+                            'bg-amber-400/10 text-amber-300 ring-amber-400/30' => $feedback->decision === \App\Enums\FeedbackDecision::ChangesRequested,
+                        ])>{{ $feedback->decision->label() }}</span>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+    </div>
+
+    <div class="mt-6 sg-card">
         <div class="flex items-center justify-between">
             <h2 class="text-lg font-semibold text-white">Zuletzt angelegte Projekte</h2>
             <a href="{{ route('admin.projects.index') }}" class="text-sm text-accent hover:text-accent-soft">Alle</a>

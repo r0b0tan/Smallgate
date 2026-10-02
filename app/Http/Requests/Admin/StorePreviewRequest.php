@@ -39,6 +39,12 @@ class StorePreviewRequest extends FormRequest
         // provision and disable actions alone.
         $optional = $this->currentStatus() === PreviewStatus::Draft ? 'nullable' : 'required';
 
+        // An upstream preview is opened at its own URL, so it needs no
+        // subdomain of its own; a static directory is reached only through one.
+        $hostname = $this->enum('target_type', PreviewTargetType::class) === PreviewTargetType::UpstreamUrl
+            ? 'nullable'
+            : $optional;
+
         return [
             'name' => ['required', 'string', 'max:255'],
             'slug' => [
@@ -49,8 +55,8 @@ class StorePreviewRequest extends FormRequest
                     ->ignore($this->route('preview')),
             ],
             'hostname' => [
-                // A preview only becomes reachable with a hostname.
-                $optional,
+                // A static preview only becomes reachable with a hostname.
+                $hostname,
                 'string', 'max:255',
                 new PreviewHostname,
                 Rule::unique('previews', 'hostname')->ignore($this->route('preview')),

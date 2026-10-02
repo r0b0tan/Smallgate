@@ -3,19 +3,19 @@
 @section('title', 'Zugang einrichten')
 
 @section('card')
-    <h1 class="font-display text-xl font-bold text-white">Zugang einrichten</h1>
-    <p class="mt-1 text-sm sg-faint">
+    <h1 class="text-2xl font-bold">Zugang einrichten</h1>
+    <p class="mt-2 text-base sg-muted">
         Sie richten den Zugang für
-        <span class="text-white">{{ $invitation->email }}</span>
+        <strong class="text-ink">{{ $invitation->email }}</strong>
         @if ($invitation->customer)
-            im Bereich <span class="text-white">{{ $invitation->customer->name }}</span>
+            ({{ $invitation->customer->name }})
         @endif
-        ein.
+        ein. Wählen Sie dafür einmalig ein Passwort – danach sehen Sie direkt Ihre Entwürfe.
     </p>
 
-    <x-errors />
+    <div class="mt-5"><x-errors /></div>
 
-    <form method="POST" action="{{ route('invitations.accept', ['token' => $token]) }}" class="mt-6 space-y-4">
+    <form method="POST" action="{{ route('invitations.accept', ['token' => $token]) }}" class="space-y-5">
         @csrf
 
         {{-- The email, the customer and the role all come from the invitation
@@ -24,9 +24,9 @@
                  autocomplete="name" />
 
         <x-field name="password" label="Passwort" type="password" required
-                 autocomplete="new-password" hint="Mindestens 12 Zeichen." />
+                 autocomplete="new-password" hint="Mindestens 12 Zeichen. Ein kurzer Satz lässt sich gut merken." />
 
-        <x-field name="password_confirmation" label="Passwort bestätigen" type="password" required
+        <x-field name="password_confirmation" label="Passwort wiederholen" type="password" required
                  autocomplete="new-password" />
 
         <button type="submit" class="sg-btn-primary w-full">Zugang aktivieren</button>

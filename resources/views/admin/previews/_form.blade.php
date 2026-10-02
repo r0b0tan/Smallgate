@@ -10,13 +10,13 @@
     <x-field name="hostname" label="Subdomain" :value="$preview->hostname"
              suffix=".{{ config('previews.base_domain') }}"
              placeholder="holzmann"
-             hint="Genau eine Subdomain. Erst zum Bereitstellen nötig." />
+             hint="Genau eine Subdomain. Nur für statische Verzeichnisse nötig, erst zum Bereitstellen." />
 
     <x-select name="target_type" label="Zieltyp" required
               :value="$preview->target_type?->value" :options="$targetTypes" />
 
     <x-field name="target" label="Ziel" :value="$preview->target"
-             hint="Nur Werte innerhalb der serverseitig freigegebenen Verzeichnisse bzw. Upstream-Hosts. Kunden sehen dieses Feld nie." />
+             hint="Nur Werte innerhalb der serverseitig freigegebenen Verzeichnisse bzw. Upstream-Hosts. Eine Upstream-URL (z. B. https://customer.example.com/zimmerei) öffnen Kunden direkt, samt Pfad; ein Verzeichnispfad bleibt intern." />
 
     <p class="rounded-lg bg-white/5 px-4 py-3 text-xs sg-muted">
         Der Status wird hier nicht gesetzt: Eine neue Vorschau ist ein Entwurf und wird über

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PreviewStatus;
 use App\Enums\ProjectStatus;
 use App\Policies\ProjectPolicy;
 use Database\Factories\ProjectFactory;
@@ -69,6 +70,23 @@ class Project extends Model
         // user without any customer sees nothing at all.
         $query->whereIn('customer_id', $user->accessibleCustomerIds())
             ->whereHas('customer', fn (Builder $customer) => $customer->where('is_active', true));
+    }
+
+    /**
+     * Load what the customer is actually offered: available previews only,
+     * newest first, with the feedback needed to tell new from answered.
+     *
+     * @param  Builder<Project>  $query
+     */
+    #[Scope]
+    protected function withOfferedPreviews(Builder $query): void
+    {
+        $query->with(['previews' => fn ($previews) => $previews
+            ->where('status', PreviewStatus::Available)
+            ->with('feedback')
+            ->orderByDesc('provisioned_at')
+            ->orderBy('name'),
+        ]);
     }
 
     /**

@@ -17,6 +17,29 @@ services:
       mailpit:
         condition: service_started
 
+  # Runs queued jobs -- today only the preview thumbnails. Same image and code
+  # as the app; restarted after every job batch so code changes are picked up.
+  worker:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    restart: unless-stopped
+    user: "${UID:-1000}:${GID:-1000}"
+    command: php artisan queue:work --tries=1 --timeout=120 --max-jobs=50
+    # Chromium's sandbox needs namespaces that Docker's default seccomp profile
+    # refuses. This is that default profile plus exactly those -- only for the
+    # worker, the only container that starts a browser in production.
+    security_opt:
+      - seccomp=./docker/seccomp/chromium.json
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+
   web:
     image: nginx:1.27-alpine
     restart: unless-stopped

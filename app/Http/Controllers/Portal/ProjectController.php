@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Portal;
 
+use App\Http\Controllers\Concerns\ResolvesPortalPreviews;
 use App\Http\Controllers\Controller;
-use App\Models\Preview;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * The customer's read-only view of their own projects.
@@ -19,20 +21,25 @@ use Illuminate\View\View;
  */
 class ProjectController extends Controller
 {
+    use ResolvesPortalPreviews;
+
+    /**
+     * The same page as the overview, narrowed to one project. Links to it live
+     * in older mails and bookmarks.
+     */
     public function show(Request $request, string $project): View
     {
         $model = Project::query()
             ->visibleTo($request->user())
-            ->with(['customer', 'previews' => fn ($q) => $q->orderBy('name')])
+            ->withOfferedPreviews()
             ->whereKey($project)
             ->firstOrFail();
 
         // Belt and braces: the policy has to agree with the scope.
         $this->authorize('view', $model);
 
-        return view('portal.projects.show', [
-            'project' => $model,
-            'previews' => $model->previews,
+        return view('portal.dashboard', [
+            'projects' => collect([$model]),
         ]);
     }
 
@@ -45,22 +52,11 @@ class ProjectController extends Controller
      */
     public function showPreview(Request $request, string $project, string $preview): RedirectResponse|View
     {
-        $projectModel = Project::query()
-            ->visibleTo($request->user())
-            ->whereKey($project)
-            ->firstOrFail();
+        [$projectModel, $previewModel] = $this->resolvePreview($request->user(), $project, $preview);
 
-        $this->authorize('view', $projectModel);
-
-        $previewModel = Preview::query()
-            ->where('project_id', $projectModel->id)
-            ->whereKey($preview)
-            ->firstOrFail();
-
-        $this->authorize('view', $previewModel);
-
-        // url() is gated on the status and on the configured base domain, so
-        // this can only ever leave for a host the portal itself controls.
+        // url() is gated on the status and re-checks the address on every
+        // call -- the subdomain against the base domain, an upstream URL against
+        // the allowlist -- so this only ever leaves for a configured host.
         if (($url = $previewModel->url()) !== null) {
             return redirect()->away($url);
         }
@@ -68,6 +64,33 @@ class ProjectController extends Controller
         return view('portal.previews.show', [
             'project' => $projectModel,
             'preview' => $previewModel,
+        ]);
+    }
+
+    /**
+     * The card picture. Protected exactly like the preview it shows, and only
+     * ever the picture of the version that is live -- a stale one is a 404 and
+     * the card shows its placeholder instead.
+     */
+    public function thumbnail(Request $request, string $project, string $preview): StreamedResponse
+    {
+        [, $previewModel] = $this->resolvePreview($request->user(), $project, $preview);
+
+        $disk = Storage::disk(config('previews.thumbnails.disk'));
+
+        abort_unless(
+            $previewModel->status->isVisitable()
+                && $previewModel->hasCurrentThumbnail()
+                && $disk->exists($previewModel->thumbnail_path),
+            404
+        );
+
+        return $disk->response($previewModel->thumbnail_path, 'vorschau.jpg', [
+            'Content-Type' => 'image/jpeg',
+            // Private: never kept by a shared cache. The URL changes with every
+            // new picture, so a day in the browser cache is safe.
+            'Cache-Control' => 'private, max-age=86400',
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 }

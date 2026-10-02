@@ -79,4 +79,42 @@ return [
     */
     'allowed_upstream_schemes' => ['https'],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Thumbnails
+    |--------------------------------------------------------------------------
+    |
+    | Every successful provisioning queues one screenshot of the preview's
+    | target (App\Jobs\GeneratePreviewThumbnail), taken with Playwright and
+    | Chromium by scripts/preview-screenshot.mjs. Never on a page view.
+    |
+    | The browser only ever sees the allow-listed target: a static directory
+    | is served to it from disk without any network, an upstream URL is
+    | pinned to its resolved public address, and every other host, IP
+    | literal and redirect is blocked.
+    |
+    | "chromium" is the browser executable; leave it empty to use the
+    | browser Playwright downloads itself (`npx playwright install chromium`).
+    |
+    | "sandbox" keeps Chromium's own process sandbox on. In Docker it needs the
+    | seccomp profile docker/seccomp/chromium.json (the worker service has it).
+    | Without a working sandbox no screenshot is taken -- switch it off only
+    | for a local setup that cannot provide one.
+    |
+    */
+
+    'thumbnails' => [
+        'enabled' => (bool) env('PREVIEW_THUMBNAILS_ENABLED', true),
+        'node' => env('PREVIEW_THUMBNAIL_NODE') ?: 'node',
+        'chromium' => env('PREVIEW_THUMBNAIL_CHROMIUM', '/usr/bin/chromium'),
+        'sandbox' => (bool) env('PREVIEW_THUMBNAIL_SANDBOX', true),
+        'timeout_seconds' => (int) env('PREVIEW_THUMBNAIL_TIMEOUT', 45),
+        'viewport' => ['width' => 1440, 'height' => 900],
+        // The screenshot is taken at the viewport above and stored at half
+        // its size, which is plenty for a card and keeps the file small.
+        'scale' => 0.5,
+        'disk' => 'local',
+        'directory' => 'preview-thumbnails',
+    ],
+
 ];
