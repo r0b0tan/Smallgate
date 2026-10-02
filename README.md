@@ -436,14 +436,20 @@ same seccomp profile as in development.
 ### First deployment
 
 TLS is terminated by a reverse proxy on the same machine. It must pass the
-original `Host` header and set `X-Forwarded-For` and `X-Forwarded-Proto`. With
-Caddy that is all of it:
+original `Host` header and set `X-Forwarded-For`, `-Proto`, `-Host` and
+`-Port` itself rather than pass on what the client sent. With Caddy:
 
 ```
 portal.example.com {
-    reverse_proxy 127.0.0.1:8080
+    reverse_proxy 127.0.0.1:8080 {
+        header_up X-Forwarded-Port 443
+    }
 }
 ```
+
+The security side of running Smallgate — server, proxy, `.env`, accounts,
+backups, updates and a go-live checklist — is covered in German in
+[docs/sicherer-betrieb.md](docs/sicherer-betrieb.md).
 
 Then:
 
