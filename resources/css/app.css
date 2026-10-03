@@ -223,6 +223,39 @@
         @apply text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted;
     }
 
+    /* Imprint and privacy text, pasted in by the administrator as Markdown. */
+    .sg-prose {
+        @apply space-y-3 text-sm leading-relaxed text-ink-muted break-words;
+
+        & h1, & h2 {
+            @apply pt-3 text-base font-semibold text-ink;
+        }
+
+        & h3, & h4, & h5, & h6 {
+            @apply pt-2 text-sm font-semibold text-ink;
+        }
+
+        & ul {
+            @apply list-disc space-y-1 pl-5;
+        }
+
+        & ol {
+            @apply list-decimal space-y-1 pl-5;
+        }
+
+        & a {
+            @apply text-link underline hover:text-ink;
+        }
+
+        & strong {
+            @apply font-semibold text-ink;
+        }
+
+        & hr {
+            @apply border-line;
+        }
+    }
+
     /* Sign-in page. The faint grid on the ground is pure decoration. */
     .sg-login-ground {
         background:

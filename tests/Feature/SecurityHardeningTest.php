@@ -195,16 +195,8 @@ it('keeps the portal out of search indexes', function () {
 
 /* -------------------------------------------------------------- legal pages */
 
-it('serves the legal placeholder pages publicly', function () {
-    $this->get(route('legal.imprint'))->assertOk()->assertSee('Impressum');
-    $this->get(route('legal.privacy'))->assertOk()->assertSee('Datenschutzerklärung', escape: false);
-});
-
-it('keeps operator details out of the repository and in the environment', function () {
-    config(['smallgate.legal.company' => 'Testfirma GmbH']);
-
-    $this->get(route('legal.imprint'))->assertOk()->assertSee('Testfirma GmbH');
-});
+// Imprint and privacy policy, including that pasted text cannot run script:
+// see tests/Feature/Admin/LegalLinksTest.php.
 
 /* --------------------------------------------------------------- redirects */
 

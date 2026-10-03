@@ -107,7 +107,7 @@ return [
     |
     */
 
-    'contact_email' => env('CONTACT_EMAIL', env('LEGAL_EMAIL', '')),
+    'contact_email' => env('CONTACT_EMAIL', ''),
 
     /*
     |--------------------------------------------------------------------------
@@ -122,27 +122,6 @@ return [
 
     'activity' => [
         'retention_days' => (int) env('ACTIVITY_RETENTION_DAYS', 90),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Legal Pages
-    |--------------------------------------------------------------------------
-    |
-    | Imprint and privacy policy are placeholders for now and are configured
-    | entirely through environment variables. No personal data is hard coded
-    | into the repository.
-    |
-    */
-
-    'legal' => [
-        'company' => env('LEGAL_COMPANY', ''),
-        'address' => env('LEGAL_ADDRESS', ''),
-        'email' => env('LEGAL_EMAIL', ''),
-        'phone' => env('LEGAL_PHONE', ''),
-        'represented_by' => env('LEGAL_REPRESENTED_BY', ''),
-        'vat_id' => env('LEGAL_VAT_ID', ''),
-        'register_entry' => env('LEGAL_REGISTER_ENTRY', ''),
     ],
 
 ];

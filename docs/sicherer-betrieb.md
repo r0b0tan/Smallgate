@@ -75,7 +75,7 @@ chmod 600 .env
 | `DB_PASSWORD` | lang und zufällig | Ohne startet der Stack nicht. PostgreSQL übernimmt es nur beim **ersten** Start; spätere Änderungen in `.env` ändern das Passwort in der Datenbank nicht. |
 | `LOG_STACK` / `LOG_LEVEL` | `stderr` / `info` | `debug` kann Anfragedaten ins Log schreiben. |
 | `MAIL_*` | SMTP-Zugang | Siehe unten. |
-| `LEGAL_*`, `CONTACT_EMAIL` | Betreiberangaben | Impressum, Datenschutz, Kontakt. |
+| `CONTACT_EMAIL` | Betreiberangabe | Kontaktadresse im Nachrichtenarchiv. Impressum und Datenschutz stehen unter „Erscheinungsbild“. |
 
 `APP_ENV=production`, `APP_DEBUG=false` und `SESSION_SECURE_COOKIE=true` setzt
 `compose.prod.yaml` selbst. `.env` kann sie nicht überschreiben.
@@ -112,11 +112,12 @@ sein.
    `curl -H 'Host: falsch.example' http://127.0.0.1:8080/` endet ohne Antwort.
 3. Im Browser anmelden. In den Entwicklerwerkzeugen müssen die Cookies
    `Secure` und `HttpOnly` tragen.
-4. Impressum und Datenschutzerklärung (`/impressum`, `/datenschutz`) prüfen
-   und rechtlich prüfen lassen. Alternativ unter „Erscheinungsbild“ auf die
-   Seiten der eigenen Website verlinken – die Datenschutzerklärung muss dann
-   auch das Kundenportal abdecken (Zugangsdaten, Cookies, Rückmeldungen,
-   Protokoll). Für den Betrieb mit echten Kunden nicht ausblenden.
+4. Unter „Erscheinungsbild“ Impressum und Datenschutzerklärung hinterlegen –
+   als Link auf die eigene Website oder als eingefügten Text – und rechtlich
+   prüfen lassen. Die Datenschutzerklärung muss auch das Kundenportal abdecken
+   (Zugangsdaten, Cookies, Einladungsmails, Rückmeldungen, Protokoll). Ohne
+   Eintrag sind beide ausgeblendet; für den Betrieb mit echten Kunden nicht so
+   lassen.
 5. Eine Einladung an eine eigene Adresse schicken und den Link einlösen. Dann
    ist auch die Mail geprüft.
 

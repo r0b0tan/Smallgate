@@ -252,10 +252,11 @@ versioned URL with `nosniff` and a sandboxing CSP. Both routes run without a
 session. Without a dark logo, the light one sits on a white tile on the
 sign-in panel. The logos also replace the favicon — with both set, the light
 one for a light browser tab and the dark one for a dark tab.
-**Impressum** and **Datenschutz** each lead to the built-in page (default), to
-the operator's own page by `https://` link — the built-in route then redirects
-there — or are switched off, in which case the footer link disappears and the
-built-in route answers 404.
+**Impressum** and **Datenschutz** are hidden until set. Each can link the
+operator's own page by `https://` URL (`/impressum` and `/datenschutz` then
+redirect there) or show a pasted text at those routes. The text is Markdown,
+every line break kept, with all HTML stripped and unsafe links dropped
+(`Branding::legalHtml()`), so nothing pasted can run in the portal.
 
 **Preview targets** — paths and upstream URLs come exclusively from an allowlist
 in `config/previews.php`. Path traversal is resolved lexically; existing paths
@@ -434,12 +435,11 @@ application behind a TLS-terminating proxy sees `http` instead of `https`.
 `SESSION_DOMAIN` stays empty. The session cookie must never be set on the parent
 domain — the reasoning is in ADR 0001.
 
-Imprint and privacy policy are placeholder pages configured through `LEGAL_*`.
-Under **Erscheinungsbild** they can be replaced by links to the operator's own
-pages, or switched off.
-They are written for German law (§ 5 DDG, GDPR); if you operate elsewhere,
-replace the wording in `resources/views/legal/`. Either way the final text needs
-legal review before you go live.
+Imprint and privacy policy are set under **Erscheinungsbild**: a link to the
+operator's own pages or a pasted text. Smallgate ships no legal wording of its
+own. Whatever is used needs legal review before you go live, and the privacy
+policy has to cover the portal (accounts, session cookies, invitation mails,
+answers, the activity log).
 
 ## Running in production
 
@@ -498,7 +498,6 @@ LOG_STACK=stderr                     # logs go to `docker compose logs`
 LOG_LEVEL=info
 DB_PASSWORD=<long random value>      # the stack refuses to start without one
 MAIL_HOST=... MAIL_PORT=... MAIL_USERNAME=... MAIL_PASSWORD=... MAIL_FROM_ADDRESS=...
-LEGAL_*=...
 CONTACT_EMAIL=...
 ```
 

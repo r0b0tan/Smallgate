@@ -7,6 +7,7 @@ use App\Policies\BrandingPolicy;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 /**
  * The portal's look, as set by an administrator under "Erscheinungsbild":
@@ -19,7 +20,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 #[Fillable([
     'name', 'footer_text', 'brand_color', 'accent_color',
-    'imprint_mode', 'imprint_url', 'privacy_mode', 'privacy_url',
+    'imprint_mode', 'imprint_url', 'imprint_text',
+    'privacy_mode', 'privacy_url', 'privacy_text',
 ])]
 #[UsePolicy(BrandingPolicy::class)]
 class Branding extends Model
@@ -39,7 +41,7 @@ class Branding extends Model
     /** Internal variant => the word used in the URL. */
     public const LOGO_VARIANTS = ['light' => 'hell', 'dark' => 'dunkel'];
 
-    /** The legal pages, with their built-in route. */
+    /** The legal pages, with the route that shows a pasted text. */
     public const LEGAL_PAGES = ['imprint' => 'legal.imprint', 'privacy' => 'legal.privacy'];
 
     protected $table = 'branding';
@@ -52,8 +54,8 @@ class Branding extends Model
      * @var array<string, mixed>
      */
     protected $attributes = [
-        'imprint_mode' => 'builtin',
-        'privacy_mode' => 'builtin',
+        'imprint_mode' => 'hidden',
+        'privacy_mode' => 'hidden',
     ];
 
     protected function casts(): array
@@ -119,10 +121,27 @@ class Branding extends Model
     public function legalUrl(string $page): ?string
     {
         return match ($this->legalMode($page)) {
-            LegalLinkMode::Builtin => route(self::LEGAL_PAGES[$page]),
+            LegalLinkMode::Text => route(self::LEGAL_PAGES[$page]),
             LegalLinkMode::Link => $this->getAttribute("{$page}_url"),
             LegalLinkMode::Hidden => null,
         };
+    }
+
+    /**
+     * The pasted text as HTML. Markdown, so headings and lists of a generated
+     * legal text come out right; any HTML in it is stripped and unsafe links
+     * (javascript:, data: and the like) are dropped, so nothing pasted can
+     * run in the portal. Every line break counts, so an address pasted line by
+     * line stays line by line.
+     */
+    public function legalHtml(string $page): string
+    {
+        return Str::markdown((string) $this->getAttribute("{$page}_text"), [
+            'html_input' => 'strip',
+            'allow_unsafe_links' => false,
+            'max_nesting_level' => 20,
+            'renderer' => ['soft_break' => "<br>\n"],
+        ]);
     }
 
     public function hasLogo(string $variant): bool

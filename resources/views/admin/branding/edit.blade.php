@@ -43,12 +43,12 @@
         'imprint' => [
             'label' => 'Impressum',
             'url_label' => 'Link zum Impressum',
-            'builtin_hint' => 'Die eingebaute Seite zeigt die Angaben aus LEGAL_* in der .env.',
+            'text_label' => 'Text des Impressums',
         ],
         'privacy' => [
             'label' => 'Datenschutz',
             'url_label' => 'Link zur Datenschutzerklärung',
-            'builtin_hint' => 'Die eingebaute Seite beschreibt Cookies, Protokoll und Aufbewahrung im Portal.',
+            'text_label' => 'Text der Datenschutzerklärung',
         ],
     ];
 @endphp
@@ -156,7 +156,7 @@
             <p class="mt-1 text-sm sg-muted">
                 Wohin „Impressum“ und „Datenschutz“ unten auf jeder Seite und bei der Anmeldung führen. Ein Link auf die
                 Seiten Ihrer Website genügt, wenn dort derselbe Anbieter steht – die Datenschutzerklärung sollte dann
-                auch das Kundenportal abdecken.
+                auch das Kundenportal abdecken. Für Betrieb mit echten Kunden nicht ausblenden.
             </p>
 
             <div class="mt-4 divide-y divide-line">
@@ -182,7 +182,12 @@
                         <x-field :name="$page.'_url'" :label="$legal['url_label']" type="url"
                                  :value="$branding->getAttribute($page.'_url')"
                                  placeholder="https://" maxlength="2048" autocomplete="url"
-                                 :hint="'Nur für „Eigener Link“. '.$legal['builtin_hint']" />
+                                 hint="Nur für „Eigener Link“. Öffnet sich in einem neuen Tab." />
+
+                        <x-field :name="$page.'_text'" :label="$legal['text_label']" type="textarea"
+                                 :value="$branding->getAttribute($page.'_text')"
+                                 maxlength="100000" class="min-h-48 text-sm"
+                                 hint="Nur für „Eigener Text“. Einfach einfügen – jede Zeile bleibt eine Zeile. Überschriften mit „## “ am Zeilenanfang, Listen mit „- “. HTML wird entfernt." />
                     </fieldset>
                 @endforeach
             </div>

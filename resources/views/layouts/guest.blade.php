@@ -14,7 +14,7 @@
         </header>
 
         <main class="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6">
-            <div class="mx-auto w-full max-w-md">
+            <div class="mx-auto w-full @yield('width', 'max-w-md')">
                 <p class="sg-eyebrow text-center">Ihr persönlicher Kundenbereich</p>
 
                 <div class="mt-4 sg-card p-6 sm:p-8">

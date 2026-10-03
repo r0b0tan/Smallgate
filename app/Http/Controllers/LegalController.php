@@ -8,18 +8,14 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 /**
- * Imprint and privacy policy.
- *
- * Placeholders for now, filled entirely from environment variables so no
- * personal data of the operator lives in the repository. Replace the view text
- * with the reviewed legal wording before going live.
- *
- * Under "Erscheinungsbild" an administrator can point either page to the
- * operator's own page instead -- old links then follow it there -- or switch
- * it off, in which case it does not exist.
+ * Imprint and privacy policy, as set under "Erscheinungsbild": the text the
+ * administrator pasted in, a redirect to the operator's own page (so old
+ * links follow along), or nothing at all.
  */
 class LegalController extends Controller
 {
+    private const TITLES = ['imprint' => 'Impressum', 'privacy' => 'Datenschutzerklärung'];
+
     public function imprint(): View|RedirectResponse
     {
         return $this->page('imprint');
@@ -35,7 +31,10 @@ class LegalController extends Controller
         $branding = Branding::current();
 
         return match ($branding->legalMode($page)) {
-            LegalLinkMode::Builtin => view("legal.{$page}", ['legal' => config('smallgate.legal')]),
+            LegalLinkMode::Text => view('legal.page', [
+                'title' => self::TITLES[$page],
+                'html' => $branding->legalHtml($page),
+            ]),
             LegalLinkMode::Link => redirect()->away($branding->legalUrl($page)),
             LegalLinkMode::Hidden => abort(404),
         };

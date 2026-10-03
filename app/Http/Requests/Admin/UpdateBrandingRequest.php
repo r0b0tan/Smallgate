@@ -40,8 +40,10 @@ class UpdateBrandingRequest extends FormRequest
             // The URLs end up in an href: https only, never javascript: or data:.
             'imprint_mode' => ['sometimes', Rule::enum(LegalLinkMode::class)],
             'imprint_url' => ['nullable', 'string', 'max:2048', 'url:https', 'required_if:imprint_mode,link'],
+            'imprint_text' => ['nullable', 'string', 'max:100000', 'required_if:imprint_mode,text'],
             'privacy_mode' => ['sometimes', Rule::enum(LegalLinkMode::class)],
             'privacy_url' => ['nullable', 'string', 'max:2048', 'url:https', 'required_if:privacy_mode,link'],
+            'privacy_text' => ['nullable', 'string', 'max:100000', 'required_if:privacy_mode,text'],
         ];
     }
 
@@ -63,6 +65,8 @@ class UpdateBrandingRequest extends FormRequest
             'privacy_url.url' => 'Bitte geben Sie eine vollständige Adresse mit https:// an.',
             'imprint_url.required_if' => 'Für einen eigenen Link brauchen wir die Adresse.',
             'privacy_url.required_if' => 'Für einen eigenen Link brauchen wir die Adresse.',
+            'imprint_text.required_if' => 'Für einen eigenen Text fügen Sie bitte den Text ein.',
+            'privacy_text.required_if' => 'Für einen eigenen Text fügen Sie bitte den Text ein.',
         ];
     }
 
@@ -82,6 +86,8 @@ class UpdateBrandingRequest extends FormRequest
             'imprint_url' => 'Link zum Impressum',
             'privacy_mode' => 'Datenschutz',
             'privacy_url' => 'Link zur Datenschutzerklärung',
+            'imprint_text' => 'Text des Impressums',
+            'privacy_text' => 'Text der Datenschutzerklärung',
         ];
     }
 }

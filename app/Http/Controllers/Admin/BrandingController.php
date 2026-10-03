@@ -33,7 +33,8 @@ class BrandingController extends Controller
 
         $branding->fill($request->safe()->only([
             'name', 'footer_text', 'brand_color', 'accent_color',
-            'imprint_mode', 'imprint_url', 'privacy_mode', 'privacy_url',
+            'imprint_mode', 'imprint_url', 'imprint_text',
+            'privacy_mode', 'privacy_url', 'privacy_text',
         ]));
 
         $disk = Storage::disk(Branding::DISK);
