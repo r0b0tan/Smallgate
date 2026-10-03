@@ -20,7 +20,7 @@ where they already work.
 
 ## A short tour
 
-The interface is German; the screenshots show the demo data from the seeder.
+The interface is German; the customers in the screenshots are fictional.
 
 ### Sign-in
 
