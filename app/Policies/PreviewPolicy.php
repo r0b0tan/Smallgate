@@ -2,8 +2,10 @@
 
 namespace App\Policies;
 
+use App\Enums\PreviewTargetType;
 use App\Models\Preview;
 use App\Models\User;
+use App\Services\Previews\PreviewTargetGuard;
 
 /**
  * A preview inherits its visibility from its project: whoever may view the
@@ -11,7 +13,10 @@ use App\Models\User;
  */
 class PreviewPolicy
 {
-    public function __construct(private readonly ProjectPolicy $projects) {}
+    public function __construct(
+        private readonly ProjectPolicy $projects,
+        private readonly PreviewTargetGuard $guard,
+    ) {}
 
     public function viewAny(User $user): bool
     {
@@ -22,6 +27,31 @@ class PreviewPolicy
     {
         return $preview->project !== null
             && $this->projects->view($user, $preview->project);
+    }
+
+    /**
+     * Opening the preview itself on its own host (ADR 0003). Checked when the
+     * portal hands out a handoff token and again on every request to the
+     * preview host, so a revoked right takes effect at once.
+     *
+     * Customers only ever open a preview that is live; administrators may open
+     * one before release to check it. Either way it has to be a static
+     * directory -- the only kind Smallgate serves itself -- that the allowlist
+     * still accepts, with a valid address on the preview domain.
+     */
+    public function open(User $user, Preview $preview): bool
+    {
+        if (! $this->view($user, $preview)) {
+            return false;
+        }
+
+        if ($preview->target_type !== PreviewTargetType::StaticDirectory
+            || ! $this->guard->isAllowed($preview->target_type, $preview->target)
+            || $preview->hostUrl() === null) {
+            return false;
+        }
+
+        return $user->isAdmin() || $preview->status->isVisitable();
     }
 
     public function create(User $user): bool

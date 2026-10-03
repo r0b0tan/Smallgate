@@ -1,6 +1,6 @@
 # ADR 0001 – Auslieferung geschützter Preview-Subdomains
 
-- **Status:** Vorgeschlagen – Entscheidung bewusst offen
+- **Status:** Für statische Vorschauen entschieden durch ADR 0003
 - **Datum:** 2026-08-31
 - **Kontext:** Smallgate MVP
 
