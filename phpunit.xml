@@ -57,7 +57,7 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
 
         <!-- Deterministic preview allowlists, independent of the local .env. -->
-        <env name="PREVIEW_BASE_DOMAIN" value="preview.clickit-digital.test"/>
+        <env name="PREVIEW_BASE_DOMAIN" value="clickit-preview.test"/>
         <env name="PREVIEW_PROVISIONER" value="null"/>
         <env name="PREVIEW_ALLOWED_ROOTS" value="/srv/previews"/>
         <env name="PREVIEW_ALLOWED_UPSTREAM_HOSTS" value="staging.clickit-digital.test"/>

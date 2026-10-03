@@ -11,10 +11,12 @@ FROM php:8.4-fpm-alpine AS base
 # Build dependencies are removed again after the extensions are compiled; only
 # the shared libraries the extensions actually link against stay installed.
 # icu-data-full: Alpine's icu-libs only carries English locale data.
+# zip: the queue worker unpacks uploaded drafts (ADR 0004).
 RUN apk add --no-cache --virtual .build-deps \
         $PHPIZE_DEPS \
         icu-dev \
         libpq-dev \
+        libzip-dev \
         linux-headers \
  && docker-php-ext-install -j"$(nproc)" \
         bcmath \
@@ -22,6 +24,7 @@ RUN apk add --no-cache --virtual .build-deps \
         opcache \
         pcntl \
         pdo_pgsql \
+        zip \
  && runDeps="$(scanelf --needed --nobanner --format '%n#p' --recursive /usr/local/lib/php/extensions \
         | tr ',' '\n' | sort -u \
         | awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }')" \

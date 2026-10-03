@@ -62,12 +62,13 @@ it('shows a customer the available previews of their own project', function () {
     $response->assertDontSee('Interner Entwurf');
 
     // The button goes through the portal, which checks access again at the
-    // moment of the click and then sends the customer straight on.
+    // moment of the click and then sends the customer on with a one-time
+    // token for the preview host (ADR 0003).
     $response->assertSee(route('portal.previews.show', [$project, $available]), escape: false);
 
     $this->actingAs($user)
         ->get(route('portal.previews.show', [$project, $available]))
-        ->assertRedirect('https://'.$available->hostname);
+        ->assertRedirectContains('https://'.$available->hostname.'/__smallgate/zugang?token=');
 
     expect($draft->status->isVisitable())->toBeFalse();
 });

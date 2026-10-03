@@ -54,6 +54,18 @@ class PreviewPolicy
         return $user->isAdmin() || $preview->status->isVisitable();
     }
 
+    /**
+     * Uploading a draft as a ZIP (ADR 0004). Administrators only, and only for
+     * a static preview Smallgate serves itself -- an upstream preview lives
+     * elsewhere. Customers never upload anything.
+     */
+    public function upload(User $user, Preview $preview): bool
+    {
+        return $user->isAdmin()
+            && $preview->target_type === PreviewTargetType::StaticDirectory
+            && $preview->target_type->isEnabled();
+    }
+
     public function create(User $user): bool
     {
         return $user->isAdmin();

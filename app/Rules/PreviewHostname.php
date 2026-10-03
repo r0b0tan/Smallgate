@@ -15,6 +15,13 @@ use Illuminate\Contracts\Validation\ValidationRule;
  */
 class PreviewHostname implements ValidationRule
 {
+    /**
+     * One DNS label: lowercase letters, digits and inner hyphens. Shared with
+     * the preview host routes and the trusted host pattern, so all three agree
+     * on what a preview host is.
+     */
+    public const LABEL_PATTERN = '[a-z0-9]+(?:-[a-z0-9]+)*';
+
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if (! is_string($value)) {
@@ -49,7 +56,7 @@ class PreviewHostname implements ValidationRule
             return;
         }
 
-        if (preg_match('/^[a-z0-9]+(-[a-z0-9]+)*$/', $label) !== 1) {
+        if (preg_match('/^'.self::LABEL_PATTERN.'$/', $label) !== 1) {
             $fail('Die Subdomain darf nur Kleinbuchstaben, Ziffern und Bindestriche enthalten.');
 
             return;

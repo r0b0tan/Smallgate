@@ -14,9 +14,9 @@ use Illuminate\Support\Facades\Log;
  *
  * It deliberately does nothing to the server: no file outside the project
  * directory is written, no web server configuration is touched, no shell
- * command runs, and nothing is ever executed with elevated privileges. It only
- * records the intent so the flow, the UI and the tests are exercised end to end
- * while the real infrastructure decision is still open.
+ * command runs, and nothing is ever executed with elevated privileges. Nothing
+ * of that is needed: a static preview is served by Smallgate itself once it is
+ * available (ADR 0003), and an upstream preview lives elsewhere.
  *
  * It does still re-validate the target, so a preview that somehow reached the
  * database with a target outside the configured allowlists is reported as
@@ -51,7 +51,7 @@ class NullPreviewProvisioner implements PreviewProvisioner
 
         return PreviewProvisioningResult::success(
             PreviewStatus::Available,
-            'Vorschau vorgemerkt. Die tatsächliche Auslieferung erfolgt in der Provisioning-Phase.'
+            'Vorschau freigegeben.'
         );
     }
 

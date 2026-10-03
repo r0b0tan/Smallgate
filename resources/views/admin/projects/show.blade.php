@@ -45,8 +45,8 @@
         <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
             <h2 class="text-lg font-semibold">Vorschauen</h2>
             <p class="text-xs sg-faint">
-                Auslieferung über <span class="font-mono">*.{{ config('previews.base_domain') }}</span> folgt in
-                einer eigenen Phase – siehe ADR 0001.
+                Statische Vorschauen liefert Smallgate unter
+                <span class="font-mono">*.{{ config('previews.base_domain') }}</span> aus, nur für angemeldete Benutzer.
             </p>
         </div>
 

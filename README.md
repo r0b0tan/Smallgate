@@ -312,39 +312,67 @@ directory outside the volume, is in
 
 ## Previews
 
-In the MVP a preview is **only a protected entry in the portal**. There is no
-subdomain serving and no proxy yet.
-
-What is already prepared:
-
-- A single wildcard DNS record (`*.preview.example.com`, configured through
-  `PREVIEW_BASE_DOMAIN`) is enough — Smallgate never creates DNS records.
-- `previews.hostname` is globally unique, so a `Host` header can later be mapped
-  to exactly one preview.
-- The `App\Contracts\PreviewProvisioner` interface marks the system boundary.
-- The only implementation, `NullPreviewProvisioner`, changes **no** server files
-  and runs **no** privileged commands.
-
-The architecture decision for real serving is deliberately still open —
-including the security problems of session cookies across several subdomains:
-[docs/adr/0001-preview-subdomain-architecture.md](docs/adr/0001-preview-subdomain-architecture.md).
-
 An administrator creates a preview as a draft and releases it with
 **Bereitstellen**; the status is the result of that action, never a form field.
 
 ### Two kinds of address
 
-- **Static directory** — opened at its own subdomain below
-  `PREVIEW_BASE_DOMAIN`, which it needs before it can be released.
+- **Static directory** — a folder of HTML, CSS, JavaScript and images below an
+  allow-listed root (`PREVIEW_ALLOWED_ROOTS`), typically the project folder
+  from **Ordner anlegen**. Smallgate serves it itself on the preview's own host
+  below `PREVIEW_BASE_DOMAIN`, e.g. `holzmann.example-preview.com`, and only to
+  signed-in users who may see it.
 - **Upstream URL** — opened at that URL, path included, e.g.
-  `https://customer.example.com/joinery-holzmann`. No subdomain needed; the
-  host must be listed in `PREVIEW_ALLOWED_UPSTREAM_HOSTS`.
+  `https://customer.example.com/joinery-holzmann`. No host of its own; the
+  host must be listed in `PREVIEW_ALLOWED_UPSTREAM_HOSTS`. Smallgate protects
+  the way *to* such a preview, not the preview itself: whoever knows the URL
+  can open it, unless the server it lives on asks for credentials of its own.
+  Treat such paths as unlisted, not as secret.
 
-Either way the customer clicks through the portal route, which checks access
-and status first and only then redirects. Smallgate protects the way *to* the
-preview, not the preview itself: whoever knows an upstream URL can open it,
-unless the server it lives on asks for credentials of its own. Treat such
-paths as unlisted, not as secret.
+### How a static preview is protected
+
+The design and its reasoning are in
+[docs/adr/0003-preview-delivery.md](docs/adr/0003-preview-delivery.md); the
+short version:
+
+- **A domain of its own.** Previews live below a registrable domain of their
+  own, not below the portal's. A draft is a website with its own JavaScript;
+  to the browser it must not count as the portal's site.
+- **The portal session never leaves the portal.** "Vorschau öffnen" hands out
+  a one-time token, valid for 60 seconds, and redirects to the preview host,
+  which exchanges it for a session cookie of its own (`__Host-`, `Secure`,
+  `HttpOnly`, `SameSite=Lax`), bound to that one preview, for at most eight
+  hours. Only SHA-256 hashes of both tokens are stored.
+- **Checked on every file.** Each request re-checks the session and the user's
+  right to open the preview, so disabling a preview, blocking a user or signing
+  out of the portal takes effect at once.
+- **No session, back to the portal.** A bookmark or a link from a mail leads
+  to the portal, which sends a signed-in user straight back with a fresh token.
+  The answer is the same for every host below the preview domain, so it does
+  not reveal which previews exist.
+- **Files only through one class.** `PreviewFileResolver` rejects `..`,
+  hidden files, symlinks out of the folder and the reserved `/__smallgate/`
+  prefix, and takes the content type from a fixed list of extensions.
+- **The draft itself is not restricted.** Scripts, modules, fonts and
+  `localStorage` work as on any website; the isolation is the domain.
+  Every answer carries `nosniff`, `Cross-Origin-Resource-Policy: same-origin`
+  (one draft cannot embed another's files) and `noindex`.
+- **Two hosts, one application.** The preview host's routes come first and
+  take every path and method there, so no portal page — least of all the login
+  form — is ever reachable on a preview host.
+
+In development the `preview` profile starts the preview host for
+`*.preview.localhost` over TLS (`PREVIEW_BASE_DOMAIN=preview.localhost`).
+Browsers resolve `*.localhost` to the own machine without any DNS. The
+certificate is not part of the repository; create a locally trusted one once,
+for example with [mkcert](https://github.com/FiloSottile/mkcert):
+
+```bash
+mkcert -cert-file docker/nginx/certs/preview.crt \
+       -key-file docker/nginx/certs/preview.key \
+       "*.preview.localhost"
+docker compose --profile preview up -d preview
+```
 
 ### Versions and feedback
 
@@ -489,7 +517,7 @@ together with `compose.yaml`:
 | Database | published on `localhost:55432` | internal network only |
 | Mail | Mailpit | your SMTP server |
 | Ports | `127.0.0.1` unless `DEV_BIND` says otherwise | web port on `127.0.0.1` only (`WEB_BIND`) |
-| nginx | answers every host | answers `PORTAL_HOST` only, HSTS |
+| nginx | answers every host | answers `PORTAL_HOST` and the preview hosts below `PREVIEW_BASE_DOMAIN` only, HSTS |
 | Migrations | by hand | the one-shot `migrate` service, before app and worker start |
 
 PHP runs as `www-data` against read-only code; only `storage/` (a volume) and
@@ -510,6 +538,27 @@ portal.example.com {
 }
 ```
 
+Static previews additionally need their own domain (see [Previews](#previews)):
+one wildcard DNS record `*.example-preview.com` pointing at the server and a
+wildcard certificate for it. Wildcard certificates are only issued through the
+DNS-01 challenge, so the proxy needs API access to your DNS provider — with
+Caddy a build that includes the matching
+[DNS module](https://caddyserver.com/docs/modules/):
+
+```
+*.example-preview.com {
+    tls {
+        dns <provider> <credentials>
+    }
+    reverse_proxy 127.0.0.1:8080 {
+        header_up X-Forwarded-Port 443
+    }
+}
+```
+
+The same nginx container answers both; it tells portal and preview hosts
+apart by name.
+
 The security side of running Smallgate — server, proxy, `.env`, accounts,
 backups, updates and a go-live checklist — is covered in German in
 [docs/sicherer-betrieb.md](docs/sicherer-betrieb.md).
@@ -529,6 +578,7 @@ command — the file refuses to load without `PORTAL_HOST` and `DB_PASSWORD`:
 APP_KEY=base64:...
 APP_URL=https://portal.example.com
 PORTAL_HOST=portal.example.com       # the host of APP_URL
+PREVIEW_BASE_DOMAIN=example-preview.com   # own domain for static previews; empty: none
 TRUSTED_PROXIES=172.30.80.0/24       # = DOCKER_SUBNET, see below
 LOG_STACK=stderr                     # logs go to `docker compose logs`
 LOG_LEVEL=info
@@ -599,11 +649,15 @@ Test a restore once before you rely on it.
 
 ### Previews in production
 
-Static-directory previews are not served in production yet — that is the open
-decision in ADR 0001. `compose.prod.yaml` therefore sets
-`PREVIEW_TARGET_TYPES=upstream_url` unless `.env` says otherwise: the admin
-form offers upstream URLs only, and an existing static preview is neither
-provisioned, screenshotted nor linked to.
+Static previews are served below `PREVIEW_BASE_DOMAIN` as soon as DNS and the
+wildcard certificate are in place (see [First deployment](#first-deployment)).
+Without a preview domain, set `PREVIEW_TARGET_TYPES=upstream_url`: the admin
+form then offers upstream URLs only, and no static preview is provisioned,
+screenshotted or linked to.
+
+The preview folders have to be readable by the `app` container, which serves
+them, and writable by the `worker`, which creates them (**Ordner anlegen**).
+Below `storage/app/previews`, the default, both is the case already.
 
 ## Project structure
 

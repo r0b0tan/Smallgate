@@ -10,11 +10,13 @@ use App\Models\Preview;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\Previews\NullPreviewProvisioner;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -45,6 +47,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configurePasswords();
         $this->configureTrustedProxies();
         $this->configureUrls();
+        $this->configureRateLimiting();
 
         // One page navigation in the portal's own look and wording.
         Paginator::defaultView('pagination');
@@ -105,6 +108,14 @@ class AppServiceProvider extends ServiceProvider
         );
     }
 
+    private function configureRateLimiting(): void
+    {
+        // Redeeming a preview handoff token (ADR 0003). By address only: the
+        // preview host has no portal session, and asking for the user there
+        // would only invite the session guard to look at cookies a draft can set.
+        RateLimiter::for('preview-handoff', fn (Request $request) => Limit::perMinute(20)->by($request->ip()));
+    }
+
     private function configureUrls(): void
     {
         // Pin every generated URL to APP_URL instead of letting it follow the
@@ -112,8 +123,12 @@ class AppServiceProvider extends ServiceProvider
         // header of the request that triggered the mail -- TrustHosts already
         // rejects a foreign Host, this is the second layer and additionally
         // covers queue workers and console commands, where no request exists.
+        // The scheme too: Laravel takes it from the request otherwise, and a
+        // request on an https preview host would turn an http portal link into
+        // one that leads nowhere.
         if ($root = (string) config('app.url')) {
             URL::forceRootUrl($root);
+            URL::forceScheme(parse_url($root, PHP_URL_SCHEME) ?: null);
         }
 
         // Every generated URL is https in production, so a reset or invitation

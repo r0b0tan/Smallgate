@@ -29,9 +29,13 @@ use Symfony\Component\HttpFoundation\Exception\SuspiciousOperationException;
  * hosts, and URL generation does not depend on the request either way.
  */
 
+/**
+ * The patterns TrustHosts hands to Symfony: the portal's own and the preview
+ * hosts (bootstrap/app.php).
+ */
 function applyTrustedHosts(): void
 {
-    Request::setTrustedHosts(config('smallgate.trusted_hosts'));
+    Request::setTrustedHosts(app(TrustHosts::class)->hosts());
 }
 
 afterEach(function () {
@@ -73,8 +77,8 @@ it('rejects a host that merely contains the application host', function () {
 })->throws(SuspiciousOperationException::class);
 
 it('trusts no subdomain of the application host', function () {
-    // subdomains: false in bootstrap/app.php. Preview subdomains are served by
-    // a separate service, never by the portal.
+    // subdomains: false in bootstrap/app.php. The preview hosts live below a
+    // domain of their own (ADR 0003), never below the portal's.
     applyTrustedHosts();
 
     $host = parse_url(config('app.url'), PHP_URL_HOST);
@@ -116,3 +120,23 @@ it('keeps a password reset link on the canonical host when the request host is f
             return true;
         });
 });
+
+it('trusts exactly one label below the preview domain', function () {
+    applyTrustedHosts();
+
+    $base = config('previews.base_domain');
+
+    expect(Request::create('https://holzmann.'.$base.'/')->getHost())->toBe('holzmann.'.$base)
+        ->and(Request::create('https://zimmerei-holzmann.'.$base.'/')->getHost())->toBe('zimmerei-holzmann.'.$base);
+});
+
+it('trusts neither the preview domain itself nor anything deeper', function (string $host) {
+    applyTrustedHosts();
+
+    Request::create('https://'.$host.'/')->getHost();
+})->with([
+    'the base domain' => fn () => config('previews.base_domain'),
+    'two labels deep' => fn () => 'a.b.'.config('previews.base_domain'),
+    'a lookalike suffix' => fn () => 'holzmann.'.config('previews.base_domain').'.boese.example',
+    'an underscore' => fn () => 'kein_unterstrich.'.config('previews.base_domain'),
+])->throws(SuspiciousOperationException::class);

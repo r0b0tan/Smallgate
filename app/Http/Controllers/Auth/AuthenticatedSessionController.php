@@ -6,6 +6,7 @@ use App\Enums\ActivityAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\Activity;
+use App\Services\Previews\PreviewAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -37,8 +38,12 @@ class AuthenticatedSessionController extends Controller
         );
     }
 
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request, PreviewAccess $previews): RedirectResponse
     {
+        // Signing out ends the sessions on the preview hosts as well; they
+        // are the user's, not this browser's (ADR 0003).
+        $previews->endSessionsOf($request->user());
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

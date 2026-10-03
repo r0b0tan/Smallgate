@@ -3,9 +3,10 @@
 namespace App\Enums;
 
 /**
- * How a preview is served once real provisioning exists. Conceptually prepared
- * only -- see docs/adr/0001-preview-subdomain-architecture.md. Customers can
- * never choose or influence a target of either kind.
+ * Where a preview comes from. A static directory is served by Smallgate itself
+ * on the preview's own host (docs/adr/0003-preview-delivery.md); an upstream
+ * URL lives elsewhere and the portal only links to it. Customers can never
+ * choose or influence a target of either kind.
  */
 enum PreviewTargetType: string
 {

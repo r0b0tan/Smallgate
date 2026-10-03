@@ -51,8 +51,9 @@ oder `artisan` direkt auf dem Host aufrufen. Immer `./sg`:
 - `role`, `customer_id`, `is_active`, `project_id`, `provisioned_at` sind
   **nie** `$fillable`. Immer explizit in Admin-Code zuweisen. Ebenso
   `previews.version`, die `thumbnail_*`-Spalten, die `logo_*`-Spalten von
-  `branding`, die `directory*`-Spalten von `projects` und bei Rückmeldungen
-  `preview_id`, `user_id`, `preview_version`.
+  `branding`, die `directory*`-Spalten von `projects`, bei Rückmeldungen
+  `preview_id`, `user_id`, `preview_version` und sämtliche Spalten von
+  `preview_handoffs` und `preview_sessions`.
 - Fremde oder unbekannte IDs → **404**, niemals 403. Ein 403 bestätigt die
   Existenz der Ressource.
 - Sichtbarkeitsprüfungen laufen über `Project::visibleTo()` bzw.
@@ -77,6 +78,30 @@ oder `artisan` direkt auf dem Host aufrufen. Immer `./sg`:
   Queue-Worker: Name nur aus den Kürzeln, nur anlegen, nur unterhalb von
   `PROJECT_DIRECTORY_ROOT`, keine Symlinks, keine erhöhten Rechte. Siehe
   ADR 0002. Änderungen daran brauchen begleitende Tests.
+- Statische Vorschauen liefert Smallgate selbst auf eigenen Preview-Hosts aus
+  (ADR 0003):
+  - `PREVIEW_BASE_DOMAIN` ist eine eigene registrierbare Domain, nie eine
+    Subdomain der Portal-Domain.
+  - Die Portal-Session verlässt nie den Portal-Host. Zugang nur über das
+    einmalige Übergabe-Token (`PreviewAccess`), Sitzungs-Cookie nur
+    `__Host-`, `Secure`, `HttpOnly`, `SameSite=Lax` – nicht `Strict`, das
+    bricht den Tausch (ADR 0003, „Cookie“).
+  - Tokens nur als SHA-256-Hash speichern, nie loggen. nginx kürzt
+    `/__smallgate/zugang` im Access-Log.
+  - Jede Anfrage auf dem Preview-Host prüft Sitzung, `Preview::visibleTo()`
+    und `PreviewPolicy::open` neu. Kein Cachen der Entscheidung.
+  - Dateien nur über `PreviewFileResolver`. Kein zweites Dekodieren des
+    Pfads, MIME-Typ nur aus der Endungsliste.
+  - Auf dem Preview-Host erreicht keine Anfrage eine Portal-Route: Die
+    Preview-Routen werden zuerst registriert und decken jeden Pfad und jede
+    Methode ab. Portal-Routen bekommen **kein** `Route::domain()` (bricht
+    `APP_URL`-gebundene Links, siehe ADR 0003). Ohne `web`-Middleware auf dem
+    Preview-Host – keine Session, kein CSRF, keine Portal-Cookies.
+  - Weiterleitungen auf dem Preview-Host nur mit relativer `Location`:
+    `redirect()`/`url()` erzeugen Portal-URLs.
+  - Änderungen an `PreviewAccess`, `PreviewHostController`,
+    `PreviewFileResolver`, `routes/preview.php` oder den Preview-Blöcken der
+    nginx-Konfiguration brauchen begleitende Tests.
 - Logos im Erscheinungsbild: nur PNG/WebP, nie SVG. Auslieferung nur über
   `BrandingAssetController` mit gespeichertem MIME-Typ, `nosniff` und
   Sandbox-CSP. Farben gelangen nur als validierter Hex-Wert ins Stylesheet.
@@ -86,9 +111,11 @@ oder `artisan` direkt auf dem Host aufrufen. Immer `./sg`:
 Der `NullPreviewProvisioner` ist die einzige Implementierung. Er darf **keine**
 Dateien außerhalb des Projektverzeichnisses verändern (die einzige Ausnahme in
 Smallgate sind Projektordner, ADR 0002, und die gehören nicht hierher) und **keine** Kommandos
-mit erhöhten Rechten ausführen. Die echte Subdomain-Auslieferung ist eine eigene
-Phase – die Architekturentscheidung ist bewusst noch offen, siehe
-`docs/adr/0001-preview-subdomain-architecture.md`.
+mit erhöhten Rechten ausführen. Für die Auslieferung braucht er auch nichts
+davon: Statische Vorschauen liefert Smallgate selbst aus, sobald sie verfügbar
+sind, siehe `docs/adr/0003-preview-delivery.md`. ADR 0001 hält die verworfenen
+Optionen fest. Hochladen von Entwürfen ist nicht entschieden und bekommt eine
+eigene ADR.
 
 ## Kundenzuordnung
 

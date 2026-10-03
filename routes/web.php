@@ -183,6 +183,11 @@ Route::middleware('auth')
         Route::get('projekte/{project}', [Portal\ProjectController::class, 'show'])->name('projects.show');
         Route::get('projekte/{project}/vorschauen/{preview}', [Portal\ProjectController::class, 'showPreview'])
             ->name('previews.show');
+        // A preview host sends visitors without a valid session here
+        // (ADR 0003); the hostname is matched through the visibility scope.
+        Route::get('vorschauen/oeffnen/{hostname}', Portal\PreviewHandoffController::class)
+            ->where('hostname', '[a-z0-9.-]+')
+            ->name('previews.open');
         Route::get('projekte/{project}/vorschauen/{preview}/vorschaubild', [Portal\ProjectController::class, 'thumbnail'])
             ->name('previews.thumbnail');
         Route::get('projekte/{project}/vorschauen/{preview}/aenderung', [Portal\FeedbackController::class, 'create'])

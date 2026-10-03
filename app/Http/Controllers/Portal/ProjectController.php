@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\Portal;
 
+use App\Enums\PreviewTargetType;
 use App\Http\Controllers\Concerns\ResolvesPortalPreviews;
 use App\Http\Controllers\Controller;
 use App\Models\PreviewFeedback;
 use App\Models\Project;
+use App\Services\Previews\PreviewAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -59,14 +62,20 @@ class ProjectController extends Controller
      * The route stays because links to it live in mails and bookmarks, and
      * because a preview that is not up needs somewhere to say so.
      */
-    public function showPreview(Request $request, string $project, string $preview): RedirectResponse|View
+    public function showPreview(Request $request, PreviewAccess $access, string $project, string $preview): RedirectResponse|View
     {
         [$projectModel, $previewModel] = $this->resolvePreview($request->user(), $project, $preview);
 
-        // url() is gated on the status and re-checks the address on every
-        // call -- the subdomain against the base domain, an upstream URL against
-        // the allowlist -- so this only ever leaves for a configured host.
-        if (($url = $previewModel->url()) !== null) {
+        // A static preview is served by Smallgate on its own host, entered
+        // with a one-time token (ADR 0003).
+        if ($previewModel->target_type === PreviewTargetType::StaticDirectory) {
+            if (Gate::allows('open', $previewModel)) {
+                return redirect()->away($access->handoffUrl($request->user(), $previewModel));
+            }
+        } elseif (($url = $previewModel->url()) !== null) {
+            // url() is gated on the status and re-checks the upstream URL
+            // against the allowlist on every call, so this only ever leaves
+            // for a configured host.
             return redirect()->away($url);
         }
 

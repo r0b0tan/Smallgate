@@ -56,8 +56,9 @@ return [
     |
     | The host of APP_URL is always trusted. TRUSTED_HOSTS adds further names,
     | comma separated -- a second domain, or the internal name a health check
-    | uses. Subdomains are deliberately NOT trusted: preview subdomains are a
-    | separate service, not the portal.
+    | uses. Subdomains of the portal are deliberately NOT trusted. The preview
+    | hosts are added in bootstrap/app.php and only ever reach
+    | routes/preview.php (ADR 0003).
     |
     | TRUSTED_PROXIES lists the reverse proxies allowed to set X-Forwarded-*.
     | With none configured those headers are ignored, which is the safe default

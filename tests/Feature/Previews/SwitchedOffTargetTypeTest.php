@@ -2,8 +2,8 @@
 
 /**
  * A preview type the operator has switched off in config('previews.target_types')
- * -- in production static directories, until ADR 0001 decides how they are
- * served. It must not be offered, accepted, provisioned or linked to.
+ * -- for example static directories on an installation without a preview
+ * domain. It must not be offered, accepted, provisioned or linked to.
  */
 
 use App\Enums\PreviewStatus;
@@ -92,7 +92,9 @@ it('keeps sending a customer to a live preview of an enabled type', function () 
         ->assertRedirect('https://staging.clickit-digital.test/zimmerei-holzmann');
 });
 
-it('switches static directories off in the production stack by default', function () {
+it('leaves the preview types to .env in the production stack', function () {
+    // Static directories are served in production since ADR 0003; the stack
+    // no longer narrows the types behind the operator's back.
     expect(file_get_contents(base_path('compose.prod.yaml')))
-        ->toContain('PREVIEW_TARGET_TYPES: ${PREVIEW_TARGET_TYPES:-upstream_url}');
+        ->not->toContain('PREVIEW_TARGET_TYPES');
 });

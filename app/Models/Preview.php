@@ -70,6 +70,16 @@ class Preview extends Model
     }
 
     /**
+     * Drafts uploaded as a ZIP (ADR 0004).
+     *
+     * @return HasMany<PreviewUpload, $this>
+     */
+    public function uploads(): HasMany
+    {
+        return $this->hasMany(PreviewUpload::class);
+    }
+
+    /**
      * @return BelongsTo<Project, $this>
      */
     public function project(): BelongsTo

@@ -18,8 +18,9 @@ terminiert und an `compose.prod.yaml` weiterreicht.
   `WEB_BIND` nicht auf `0.0.0.0` ändern.
 - Wer in der Gruppe `docker` ist, ist faktisch root. Die Gruppe klein halten.
 - DNS: ein A- bzw. AAAA-Eintrag für den Portal-Host, z. B.
-  `portal.example.com`. Ein Wildcard-Eintrag für Vorschauen wird derzeit nicht
-  gebraucht (siehe Abschnitt 6).
+  `portal.example.com`. Für statische Vorschauen zusätzlich ein
+  Wildcard-Eintrag auf einer **eigenen** Domain, z. B. `*.example-preview.com`
+  (Abschnitt 6).
 
 ## 2. Reverse Proxy und TLS
 
@@ -32,6 +33,22 @@ Zertifikat und leitet auf HTTPS um. Nur den Port muss man ausdrücklich setzen:
 
 ```
 portal.example.com {
+    reverse_proxy 127.0.0.1:8080 {
+        header_up X-Forwarded-Port 443
+    }
+}
+```
+
+Statische Vorschauen brauchen ein Wildcard-Zertifikat für die
+Preview-Domain. Das gibt es nur über die DNS-01-Challenge, der Proxy braucht
+also API-Zugriff auf den DNS-Anbieter. Mit Caddy über das passende
+DNS-Modul:
+
+```
+*.example-preview.com {
+    tls {
+        dns <anbieter> <zugangsdaten>
+    }
     reverse_proxy 127.0.0.1:8080 {
         header_up X-Forwarded-Port 443
     }
@@ -158,15 +175,22 @@ sein.
 
 ## 6. Vorschauen
 
-- In Produktion sind nur **Upstream-URLs** erlaubt
-  (`PREVIEW_TARGET_TYPES=upstream_url`). Statische Verzeichnisse brauchen eine
-  Auslieferung, über die ADR 0001 noch nicht entschieden hat.
+- **Statische Vorschauen** liefert Smallgate selbst aus, unter
+  `PREVIEW_BASE_DOMAIN`, nur an angemeldete Benutzer mit Zugriff. Wer die
+  Adresse kennt, aber nicht über das Portal kommt, sieht nichts. Die
+  Begründung steht in ADR 0003.
+- `PREVIEW_BASE_DOMAIN` ist eine **eigene registrierbare Domain**, nie eine
+  Subdomain der Portal-Domain. Sonst zählt das JavaScript eines Entwurfs für
+  den Browser zur selben Website wie das Portal.
+- Ohne Preview-Domain `PREVIEW_TARGET_TYPES=upstream_url` setzen. Dann bietet
+  Smallgate nur Upstream-URLs an.
 - In `PREVIEW_ALLOWED_UPSTREAM_HOSTS` nur Hosts eintragen, die man selbst
   kontrolliert.
-- Smallgate schützt den **Weg** zur Vorschau, nicht die Vorschau selbst. Wer
-  die URL kennt, kann sie öffnen. Vertrauliche Entwürfe brauchen einen eigenen
-  Schutz auf dem Staging-Server. Dann kann der Worker allerdings kein
-  Vorschaubild mehr aufnehmen und die Karte zeigt den Platzhalter.
+- Bei **Upstream-URLs** schützt Smallgate nur den **Weg** zur Vorschau, nicht
+  die Vorschau selbst. Wer die URL kennt, kann sie öffnen. Vertrauliche
+  Entwürfe gehören deshalb als statisches Verzeichnis nach Smallgate oder
+  brauchen einen eigenen Schutz auf dem Staging-Server. Im zweiten Fall kann
+  der Worker kein Vorschaubild aufnehmen und die Karte zeigt den Platzhalter.
 - Der Worker öffnet Kundenseiten in Chromium. Dessen Sandbox und das
   Seccomp-Profil `docker/seccomp/chromium.json` sind die Grenze zwischen einer
   fremden Webseite und dem Container. **Nie** `--no-sandbox`,
@@ -209,9 +233,10 @@ PHP-Abhängigkeiten auf bekannte Lücken prüfen:
 - **Logs:** `docker compose -f compose.prod.yaml logs`. Smallgate schreibt
   keine Passwörter, Tokens oder personenbezogenen Daten ins Log. Das
   Access-Log von nginx kürzt Einladungs- und Reset-Links und lässt den
-  Referrer weg. Der Reverse Proxy davor muss das selbst tun: Er sieht
-  `/einladung/<token>` und `/passwort-zuruecksetzen/<token>?email=…` im
-  Klartext. Caddy schreibt ohne `log`-Direktive kein Access-Log. Bei nginx
+  Referrer weg, ebenso das Übergabe-Token der Vorschauen. Der Reverse Proxy
+  davor muss das selbst tun: Er sieht `/einladung/<token>`,
+  `/passwort-zuruecksetzen/<token>?email=…` und
+  `/__smallgate/zugang?token=…` im Klartext. Caddy schreibt ohne `log`-Direktive kein Access-Log. Bei nginx
   diese Pfade aus dem Log nehmen oder maskieren.
 - **Queue:** Der `worker` verschickt auch die Mails zum Zurücksetzen des
   Passworts. Läuft er nicht, kommen keine Reset-Mails an.
@@ -233,6 +258,9 @@ PHP-Abhängigkeiten auf bekannte Lücken prüfen:
 - [ ] `SESSION_DOMAIN` leer
 - [ ] `LOG_LEVEL=info`, Mail über TLS
 - [ ] Fremder Host bekommt keine Antwort, Cookies sind `Secure` und `HttpOnly`
+- [ ] Statische Vorschauen: eigene Domain in `PREVIEW_BASE_DOMAIN`,
+      Wildcard-DNS und Wildcard-Zertifikat, Vorschau einmal über das Portal
+      geöffnet und ohne Anmeldung nicht erreichbar
 - [ ] Administrator mit `admin:create` angelegt, Einladung einmal durchgespielt
 - [ ] Impressum und Datenschutz rechtlich geprüft
 - [ ] Backup per Cron, verschlüsselt außer Haus, Wiederherstellung getestet

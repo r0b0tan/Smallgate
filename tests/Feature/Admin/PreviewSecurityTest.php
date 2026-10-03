@@ -71,10 +71,10 @@ it('refuses a hostname outside the preview base domain', function (string $hostn
     expect(Preview::count())->toBe(0);
 })->with([
     'foreign domain' => 'kunde.example.com',
-    'the base domain itself' => 'preview.clickit-digital.test',
-    'two labels deep' => 'a.b.preview.clickit-digital.test',
-    'underscore' => 'kein_unterstrich.preview.clickit-digital.test',
-    'trailing hyphen' => 'kunde-.preview.clickit-digital.test',
+    'the base domain itself' => 'clickit-preview.test',
+    'two labels deep' => 'a.b.clickit-preview.test',
+    'underscore' => 'kein_unterstrich.clickit-preview.test',
+    'trailing hyphen' => 'kunde-.clickit-preview.test',
 ]);
 
 it('refuses a duplicate preview hostname', function () {

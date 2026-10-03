@@ -7,14 +7,61 @@ return [
     | Preview Base Domain
     |--------------------------------------------------------------------------
     |
-    | A single wildcard DNS record (*.preview.example.com) points at the
-    | preview server, so Smallgate never has to create DNS records itself.
-    | Preview hostnames must be a direct label under this domain; the value is
-    | enforced server side in App\Rules\PreviewHostname.
+    | Static previews are served by Smallgate itself, one host per preview
+    | directly below this domain (ADR 0003). It should be a registrable domain
+    | of its own, not a subdomain of the portal's, so a draft never counts as
+    | the portal's site. A single wildcard DNS record points at the server;
+    | Smallgate never creates DNS records itself. Preview hostnames must be a
+    | direct label under this domain, enforced in App\Rules\PreviewHostname.
     |
     */
 
     'base_domain' => env('PREVIEW_BASE_DOMAIN', 'preview.example.com'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Access on the Preview Host
+    |--------------------------------------------------------------------------
+    |
+    | How a signed-in portal user gets onto a preview host (ADR 0003): the
+    | portal hands out a one-time token that is valid for seconds, the preview
+    | host exchanges it for a session of its own that ends after a fixed time
+    | and is never extended. Every request re-checks PreviewPolicy::open, so a
+    | revoked right takes effect at once, whatever these values are.
+    |
+    */
+
+    'access' => [
+        'handoff_seconds' => 60,
+        'session_hours' => 8,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Uploaded Drafts
+    |--------------------------------------------------------------------------
+    |
+    | An administrator uploads a static draft as a ZIP; the queue worker
+    | unpacks it into a folder of its own and only then points the preview at
+    | it (ADR 0004). The limits stop zip bombs: the unpacked size is counted
+    | while writing, never taken from the archive's own headers. The ZIP limit
+    | has to stay within upload_max_filesize (docker/php/php.ini) and the
+    | upload route's client_max_body_size in nginx.
+    |
+    | "keep" is how many uploads of one preview stay on disk, the current one
+    | included. Older ones are deleted -- only folders Smallgate created and
+    | recorded itself, never the current target.
+    |
+    */
+
+    'uploads' => [
+        'max_zip_bytes' => 64 * 1024 * 1024,
+        'max_extracted_bytes' => 256 * 1024 * 1024,
+        'max_files' => 5000,
+        'max_depth' => 20,
+        'max_path_length' => 255,
+        'keep' => 3,
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -47,9 +94,9 @@ return [
     | their input is validated against the allowlists below.
     |
     | Only the types listed here can be chosen, provisioned, screenshotted or
-    | opened; PreviewTargetGuard rejects every other one. compose.prod.yaml
-    | narrows this to "upstream_url": a static directory needs the subdomain
-    | serving that ADR 0001 has not decided yet, so its link would lead nowhere.
+    | opened; PreviewTargetGuard rejects every other one. Without a preview
+    | domain (PREVIEW_BASE_DOMAIN) a static directory has nowhere to be served,
+    | so such an installation lists "upstream_url" only.
     |
     */
 

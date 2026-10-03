@@ -4,7 +4,8 @@
 #
 # Differences to the development stack: the code is baked into the image (no
 # bind mount, no dev dependencies), the database is not published, there is no
-# Mailpit, and nginx answers only for PORTAL_HOST. TLS is terminated by a
+# Mailpit, and nginx answers only for PORTAL_HOST and the preview hosts below
+# PREVIEW_BASE_DOMAIN. TLS is terminated by a
 # reverse proxy in front of the "web" port -- see README, "Betrieb".
 #
 # Configuration comes from .env next to this file. APP_ENV, APP_DEBUG and
@@ -23,10 +24,6 @@ x-app: &app
     # The session cookie only ever travels over TLS. Fixed for the same reason
     # as the two above: a development .env must not be able to undo it.
     SESSION_SECURE_COOKIE: "true"
-    # Static-directory previews need subdomain serving that does not exist yet
-    # (ADR 0001), so production offers upstream URLs only unless .env says
-    # otherwise.
-    PREVIEW_TARGET_TYPES: ${PREVIEW_TARGET_TYPES:-upstream_url}
   volumes:
     - storage:/var/www/html/storage
   networks:
@@ -75,6 +72,8 @@ services:
     restart: unless-stopped
     environment:
       PORTAL_HOST: ${PORTAL_HOST:?PORTAL_HOST fehlt in .env (Hostname aus APP_URL)}
+      # The preview hosts below it (ADR 0003). Empty switches them off.
+      PREVIEW_BASE_DOMAIN: ${PREVIEW_BASE_DOMAIN:-}
     # Loopback only: the reverse proxy on this machine is the only client. A
     # port published on all interfaces would also bypass the host firewall.
     ports:

@@ -243,7 +243,7 @@ it('marks a failure, logs no target, and leaves the preview usable', function ()
         ->assertDontSee(route('portal.previews.thumbnail', [$project, $preview]), escape: false);
 
     $this->actingAs($user)->get(route('portal.previews.show', [$project, $preview]))
-        ->assertRedirect('https://'.$preview->hostname);
+        ->assertRedirectContains('https://'.$preview->hostname.'/__smallgate/zugang?token=');
 });
 
 it('marks the thumbnail failed when the worker kills the job', function () {

@@ -6,7 +6,8 @@
 # must pass the original Host header and set X-Forwarded-Proto/-For.
 
 # Invitation and password reset links carry their one-time token -- and the
-# reset link the address -- in the URL. The access log gets the path with the
+# reset link the address -- in the URL, and so does the handoff onto a preview
+# host (ADR 0003). The access log gets the path with the
 # secret cut off. The referrer is left out entirely: Referrer-Policy
 # "same-origin" sends the full reset URL along with every asset of that page.
 #
@@ -15,6 +16,7 @@
 map $request_uri $smallgate_log_uri {
     ~^/einladung/                /einladung/[entfernt];
     ~^/passwort-zuruecksetzen/   /passwort-zuruecksetzen/[entfernt];
+    ~^/__smallgate/zugang        /__smallgate/zugang?[entfernt];
     default                      $request_uri;
 }
 
@@ -57,6 +59,20 @@ server {
         try_files $uri $uri/ /index.php?$query_string;
     }
 
+    # Uploading a draft (ADR 0004) is the one request allowed to be large.
+    # nginx reads the body in the block that hands it to PHP, so the route
+    # needs a fastcgi block of its own: a try_files to /index.php would apply
+    # the 16M of the PHP block again.
+    location ~ "^/admin/projekte/[0-9a-z]{26}/vorschauen/[0-9a-z]{26}/hochladen$" {
+        client_max_body_size 66M;
+
+        fastcgi_pass app:9000;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root/index.php;
+        fastcgi_param SCRIPT_NAME /index.php;
+        fastcgi_hide_header X-Powered-By;
+    }
+
     # Hashed file names: a new build has new names, so the old ones can be
     # cached for good. add_header here replaces the server level headers, so
     # the ones that matter for static files are repeated.
@@ -89,4 +105,54 @@ server {
     location = /robots.txt  { access_log off; log_not_found off; }
 
     error_page 404 /index.php;
+}
+
+# Preview hosts: exactly one label below PREVIEW_BASE_DOMAIN (ADR 0003). The
+# application checks the visitor's session and serves every file of a draft
+# itself, so every request goes to the front controller -- nothing from
+# public/ is served here, and nothing but GET and HEAD gets through.
+#
+# The pattern only takes the label apart; the rest has to be the preview domain
+# exactly, or the request is dropped like any unknown host. An empty
+# PREVIEW_BASE_DOMAIN switches the preview hosts off. PORTAL_HOST is an exact
+# name above and always wins over this pattern.
+server {
+    listen 80;
+    server_name ~^[a-z0-9]+(?:-[a-z0-9]+)*\.(?<preview_domain>.+)$;
+
+    if ($preview_domain != "${PREVIEW_BASE_DOMAIN}") {
+        return 444;
+    }
+
+    root /var/www/html/public;
+
+    charset utf-8;
+    client_max_body_size 1k;
+    server_tokens off;
+
+    access_log /var/log/nginx/access.log smallgate;
+
+    # The application sets the headers for the draft (nosniff,
+    # Cross-Origin-Resource-Policy, frame-ancestors, noindex). The portal's
+    # strict CSP must not apply here: a draft is a website of its own.
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    location / {
+        rewrite ^ /index.php last;
+    }
+
+    # REQUEST_URI stays the one the browser sent, encoded and with its
+    # trailing slash -- the application needs both.
+    location = /index.php {
+        internal;
+
+        limit_except GET {
+            deny all;
+        }
+
+        fastcgi_pass app:9000;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root/index.php;
+        fastcgi_hide_header X-Powered-By;
+    }
 }

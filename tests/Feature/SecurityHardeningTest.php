@@ -128,6 +128,7 @@ it('keeps one-time tokens out of the production access log', function () {
     expect($nginx)
         ->toContain('~^/einladung/                /einladung/[entfernt];')
         ->toContain('~^/passwort-zuruecksetzen/   /passwort-zuruecksetzen/[entfernt];')
+        ->toContain('~^/__smallgate/zugang        /__smallgate/zugang?[entfernt];')
         ->toContain('access_log /var/log/nginx/access.log smallgate;');
 
     preg_match('/log_format smallgate (.*?);/s', $nginx, $format);
@@ -138,6 +139,32 @@ it('keeps one-time tokens out of the production access log', function () {
         ->not->toContain('$request"')
         ->not->toContain('$request_uri')
         ->not->toContain('$http_referer');
+});
+
+it('hands every request on a preview host to the application, GET and HEAD only', function () {
+    $nginx = file_get_contents(base_path('docker/nginx/prod.conf.template'));
+
+    preg_match('/server \{\s+listen 80;\s+server_name ~\^(.*?)\n\}\n?$/s', $nginx, $block);
+
+    expect($block)->not->toBeEmpty();
+
+    $preview = $block[0];
+
+    // Exactly the configured domain behind the label, anything else dropped.
+    expect($preview)
+        ->toContain('if ($preview_domain != "${PREVIEW_BASE_DOMAIN}")')
+        ->toContain('return 444;')
+        // Everything goes to the front controller; no try_files, so nothing
+        // from public/ is ever served on a preview host.
+        ->toContain('rewrite ^ /index.php last;')
+        ->not->toContain('try_files')
+        ->toContain("limit_except GET {\n            deny all;")
+        ->toContain('access_log /var/log/nginx/access.log smallgate;')
+        // The portal's CSP would break every draft; the app sets the draft's.
+        ->not->toContain('Content-Security-Policy');
+
+    expect(file_get_contents(base_path('compose.prod.yaml')))
+        ->toContain('PREVIEW_BASE_DOMAIN: ${PREVIEW_BASE_DOMAIN:-}');
 });
 
 it('publishes the development ports on loopback only', function () {

@@ -61,22 +61,56 @@ erzwingt weiterhin genau eine Ebene darunter.
    Benutzer und Vorschau. In der Datenbank liegt nur der SHA-256-Hash.
    Antwort: Weiterleitung auf
    `https://<hostname>/__smallgate/zugang?token=…`.
-2. **Tausch.** Der Preview-Host löst das Token ein. Er prüft, dass der Hash
-   existiert, noch nicht verwendet und nicht abgelaufen ist und dass der
-   Hostname der Anfrage zur Vorschau des Tokens passt. Das Einlösen ist ein
-   einziges atomares `UPDATE … WHERE used_at IS NULL`. Danach legt er eine
-   Preview-Sitzung an und setzt das Cookie `__Host-smallgate-preview`
-   (`Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`, ohne `Domain`). Antwort:
-   `303` auf `/`, ohne Token. `Referrer-Policy: no-referrer`.
-3. **Jede weitere Anfrage.** Der Preview-Host liest das Cookie, sucht die
-   Sitzung über den Hash und prüft **bei jeder Anfrage erneut**:
-   Sitzung gültig, Hostname passt, Benutzer aktiv, `PreviewPolicy::open`
-   erlaubt. Erst dann löst er den Pfad auf und liefert die Datei aus.
+2. **Tausch.** Der Preview-Host löst das Token ein, mit einem einzigen
+   atomaren `UPDATE … SET used_at = now() WHERE token_hash = ? AND used_at IS
+   NULL AND expires_at > now() RETURNING …`. Zwei gleichzeitige Aufrufe können
+   also nicht beide gelingen. Danach prüft er, dass der Hostname der Anfrage
+   zur Vorschau des Tokens passt. Dann legt er eine Preview-Sitzung an und
+   setzt das Cookie `__Host-smallgate-preview` (`Secure`, `HttpOnly`,
+   `SameSite=Lax`, `Path=/`, ohne `Domain`). Antwort: `303` auf `/`, ohne
+   Token, mit `Referrer-Policy: no-referrer`. Der Tausch hat ein eigenes
+   Rate-Limit pro IP-Adresse. Scheitert er, zeigt der Preview-Host eine
+   Fehlerseite und leitet **nicht** weiter. So kann keine Schleife entstehen.
+3. **Jede weitere Anfrage.** Der Preview-Host liest das Cookie und sucht die
+   Sitzung über den Hash. Die Vorschau sucht er über
+   `Preview::visibleTo($user)` und den Hostnamen der Anfrage. **Bei jeder
+   Anfrage** prüft er erneut: Sitzung gültig und nicht abgelaufen, Sitzung
+   gehört zu dieser Vorschau, `PreviewPolicy::open` erlaubt. Die Policy deckt
+   über `ProjectPolicy::view` auch gesperrte Benutzer und deaktivierte Kunden
+   ab. Erst dann löst er den Pfad auf und liefert die Datei aus.
 
-Ohne gültige Sitzung zeigt der Preview-Host eine kurze Seite: „Diese Vorschau
-ist nur über das Kundenportal erreichbar“, mit Link auf das Portal. Diese
-Antwort ist für bekannte und unbekannte Hostnamen **identisch**. Sie verrät
-also nicht, ob es eine Vorschau gibt.
+**Ohne gültige Sitzung** leitet der Preview-Host auf eine Portal-Route weiter,
+die die Vorschau über ihren Hostnamen auflöst (`/portal/vorschauen/oeffnen/<hostname>`).
+Ist der Benutzer im Portal angemeldet, stellt das Portal ein neues Token aus,
+und er landet ohne Zwischenschritt wieder in der Vorschau. Andernfalls landet
+er auf der Anmeldung. So funktionieren auch Lesezeichen und Links aus E-Mails.
+Diese Weiterleitung ist für jeden Hostnamen unter der Preview-Domain
+**identisch**, egal ob es dort eine Vorschau gibt oder nicht. Ob eine Vorschau
+existiert, entscheidet erst das Portal, und zwar mit demselben 404 wie überall.
+
+### Cookie
+
+- **`__Host-`-Präfix.** Alle Vorschauen teilen sich `clickit-preview.de`. Ohne
+  Präfix könnte ein Entwurf ein Cookie mit `Domain=.clickit-preview.de` setzen
+  und damit das Cookie einer anderen Vorschau überlagern (Cookie-Tossing). Ein
+  `__Host-`-Cookie nimmt der Browser nur ohne `Domain` an, und der Server liest
+  nur diesen Namen.
+- **`SameSite=Lax`, nicht `Strict`.** Geprüft mit dem Chromium aus dem Worker:
+  - Mit `Strict` kommt das Cookie nach dem Klick im Portal und dem `303` auf
+    `/` nicht mit, auch nicht beim Neuladen. Die Navigation hat im Portal
+    begonnen und gilt deshalb als „cross-site“. Der Tausch würde sich im Kreis
+    drehen.
+  - Zwischen Vorschauen schützt `Strict` nicht. Alle `*.clickit-preview.de`
+    sind untereinander „same-site“, also geht das Cookie mit, wenn Vorschau a
+    eine Datei von Vorschau b einbindet.
+  - Gegen fremde Websites reicht `Lax`. Es lässt nur `GET`-Navigationen auf
+    oberster Ebene durch, und der Preview-Host hat keine Aktionen, die sich
+    damit auslösen ließen.
+- **Abschirmung zwischen Vorschauen** leistet
+  `Cross-Origin-Resource-Policy: same-origin` auf jeder Antwort. Ein Entwurf
+  kann dann keine Dateien einer anderen Vorschau einbinden, etwa deren
+  JavaScript per `<script src>`. Das betrifft vor allem Admins, die Sitzungen
+  für viele Vorschauen gleichzeitig haben.
 
 ### Berechtigung
 
@@ -117,10 +151,17 @@ Stelle, die einen Anfragepfad in eine Datei übersetzt:
 - Der Präfix `/__smallgate/` ist reserviert und wird nie aus dem Ordner bedient.
 
 Die Antwort ist eine `BinaryFileResponse` mit Range-Unterstützung und diesen
-Headern: `X-Content-Type-Options: nosniff`, `Cache-Control: private,
-no-cache` (der Browser darf zwischenspeichern, fragt aber jedes Mal nach, und
-jede Nachfrage läuft durch die Prüfung), `X-Robots-Tag: noindex`,
-`Content-Security-Policy: frame-ancestors 'none'`.
+Headern:
+
+- `X-Content-Type-Options: nosniff`
+- `Cross-Origin-Resource-Policy: same-origin`
+- `Cache-Control: private, no-cache` mit `Last-Modified` und einem `ETag` aus
+  Größe und Änderungszeit, nicht aus einem Hash des Inhalts, sonst müsste jede
+  Nachfrage die ganze Datei lesen. Der Browser darf zwischenspeichern, fragt
+  aber jedes Mal nach. Jede Nachfrage läuft durch die Prüfung und bekommt bei
+  unverändertem Stand nur ein `304`.
+- `X-Robots-Tag: noindex`
+- `Content-Security-Policy: frame-ancestors 'none'`
 
 Darüber hinaus schränkt Smallgate den Entwurf **nicht** ein. Er läuft wie eine
 normale Website, mit Skripten, Modulen, Fonts, `localStorage` und
@@ -128,11 +169,20 @@ root-absoluten Pfaden. Die Isolation leistet die eigene Origin.
 
 ### Trennung von Portal und Preview-Host
 
-- **Routen.** Die Portal-Routen antworten nur auf dem Portal-Host. Die
-  Preview-Routen sind eine eigene Gruppe mit `Route::domain()` und eigenem
-  Middleware-Stack: keine Portal-Session, kein CSRF, keine Portal-Cookies. Auf
-  dem Preview-Host gibt es keine Anmeldeseite, die ein Entwurf nachahmen oder
-  über die er an ein Portal-Cookie kommen könnte.
+- **Routen.** Die Preview-Routen sind eine eigene Gruppe mit `Route::domain()`
+  und eigenem Middleware-Stack: keine Portal-Session, kein CSRF, keine
+  Portal-Cookies. Sie werden **vor** den Portal-Routen registriert und decken
+  auf dem Preview-Host jeden Pfad und jede Methode ab (`GET`/`HEAD` liefern aus,
+  alles andere bekommt `405`). Eine Anfrage an einen Preview-Host erreicht so
+  nie eine Portal-Route. Auf dem Preview-Host gibt es keine Anmeldeseite, die
+  ein Entwurf nachahmen oder über die er an ein Portal-Cookie kommen könnte.
+  Ein Test prüft das auch mit dem kompilierten Matcher, den `route:cache` in
+  Produktion verwendet.
+
+  Die Portal-Routen bekommen bewusst **kein** `Route::domain()`. Für Routen mit
+  Domain baut Laravel URLs aus der Route-Domain und dem **Port des aktuellen
+  Requests** und übergeht `APP_URL`. Ein Host-Header wie `portal…:1234` landete
+  dann mit diesem Port in Reset- und Einladungslinks.
 - **Nginx.** Ein zweiter `server`-Block nimmt nur Hostnamen mit genau einer
   Ebene unter der Preview-Domain an und reicht alles an `index.php` weiter.
   Aus `public/` wird dort nichts direkt ausgeliefert. Erlaubt sind nur `GET`
@@ -163,9 +213,10 @@ bestehenden Constraints passen dazu.
 - **Volumes.** Die Projektordner müssen im `app`-Container lesbar sein (nur
   lesend). Der `worker` braucht sie weiterhin schreibend für ADR 0002.
 - **Produktion.** `compose.prod.yaml` bietet `static_directory` wieder an.
-- **Entwicklung.** Der Mock-Host `preview.conf` entfällt. Der `preview`-Container
-  leitet `*.preview.localhost` an die Anwendung weiter, mit demselben Ablauf
-  wie in Produktion.
+- **Entwicklung.** Der Mock-Host ohne Zugriffsschutz entfällt. Der
+  `preview`-Container (`docker/nginx/preview.conf.template`) leitet
+  `*.preview.localhost` an die Anwendung weiter, mit demselben Ablauf wie in
+  Produktion.
 
 ## Nicht entschieden
 
@@ -199,16 +250,20 @@ bestehenden Constraints passen dazu.
 
 ## Umsetzung
 
-1. Migrationen, Modelle, `PreviewPolicy::open`.
+1. Migrationen, Modelle, `PreviewPolicy::open`. *(erledigt)*
 2. `PreviewFileResolver` mit Unit-Tests: `..`, `%2e%2e`, `%00`, Backslash,
    Dotfiles, Symlink nach außen, Verzeichnis ohne `index.html`, MIME-Liste.
-3. Preview-Routen, Middleware und Tausch, mit Feature-Tests:
+   *(erledigt)*
+3. Preview-Routen, Middleware und Tausch, mit Feature-Tests: *(erledigt)*
    - Token zweimal eingelöst, abgelaufen oder auf einem anderen Host.
    - Fremder Kunde, deaktivierte Vorschau, gesperrter Benutzer, Abmeldung.
-   - Gleiche Antwort für unbekannte und geschützte Hosts.
+   - Ohne Sitzung dieselbe Weiterleitung für unbekannte und vorhandene Hosts.
+   - Header auf jeder Antwort, `304` bei unverändertem Stand.
    - Portal-Routen auf dem Preview-Host liefern 404.
-4. `showPreview()` und der Admin-Link erzeugen das Token, statt direkt
-   weiterzuleiten.
+4. Im Portal: `showPreview()` erzeugt das Token, statt direkt
+   weiterzuleiten. Dazu kommt die Route `/portal/vorschauen/oeffnen/<hostname>`.
+   Der Admin-Link führt weiter direkt auf den Preview-Host und kommt über diese
+   Route mit Token zurück. *(erledigt, zusammen mit Schritt 3)*
 5. Nginx (Entwicklung und Produktion), `compose.prod.yaml`, `TRUSTED_HOSTS`,
-   README unter „Betrieb“.
-6. ADR 0001 als entschieden markieren, `CLAUDE.md` anpassen.
+   README unter „Betrieb“. *(erledigt)*
+6. `CLAUDE.md` anpassen. *(erledigt)*
