@@ -2,7 +2,7 @@
 
 @section('title', 'Erscheinungsbild')
 @section('header', 'Erscheinungsbild')
-@section('subheader', 'Name, Farben und Logos des Portals – für Kunden, Anmeldung und E-Mails.')
+@section('subheader', 'Name, Farben, Logos und Rechtstexte des Portals – für Kunden, Anmeldung und E-Mails.')
 
 @use('App\Models\Branding')
 
@@ -38,6 +38,19 @@
                 : 'Kein eigenes Logo – es erscheint das Standardzeichen.',
         ],
     ];
+
+    $legalPages = [
+        'imprint' => [
+            'label' => 'Impressum',
+            'url_label' => 'Link zum Impressum',
+            'builtin_hint' => 'Die eingebaute Seite zeigt die Angaben aus LEGAL_* in der .env.',
+        ],
+        'privacy' => [
+            'label' => 'Datenschutz',
+            'url_label' => 'Link zur Datenschutzerklärung',
+            'builtin_hint' => 'Die eingebaute Seite beschreibt Cookies, Protokoll und Aufbewahrung im Portal.',
+        ],
+    ];
 @endphp
 
 @section('content')
@@ -49,16 +62,16 @@
         <x-errors />
 
         <section class="sg-card">
-            <h2 class="text-lg font-semibold">Name und Copyright</h2>
+            <h2 class="text-lg font-semibold">Name und Fußzeile</h2>
 
             <div class="mt-4 space-y-4">
                 <x-field name="name" label="Schriftzug" :value="$branding->name"
                          :placeholder="config('app.name')" maxlength="60"
                          :hint="'Steht neben dem Logo, im Browser-Tab und in den E-Mails. Leer lassen für „'.config('app.name').'“.'" />
 
-                <x-field name="copyright" label="Copyright" :value="$branding->copyright"
-                         :placeholder="Branding::DEFAULT_COPYRIGHT" maxlength="120"
-                         :hint="'Erscheint als „© '.date('Y').' …“ in der Fußzeile und in den E-Mails. Das Jahr kommt automatisch dazu.'" />
+                <x-field name="footer_text" label="Fußzeile" :value="$branding->footer_text"
+                         :placeholder="Branding::DEFAULT_FOOTER_TEXT" maxlength="120"
+                         :hint="'Steht unten auf jeder Seite und in den E-Mails. Leer lassen für „'.Branding::DEFAULT_FOOTER_TEXT.'“.'" />
             </div>
         </section>
 
@@ -95,7 +108,7 @@
         <section class="sg-card">
             <h2 class="text-lg font-semibold">Logos</h2>
             <p class="mt-1 text-sm sg-muted">
-                PNG oder WebP mit transparentem Hintergrund, höchstens 512 KB. Am besten nur das Bildzeichen,
+                PNG oder WebP mit transparentem Hintergrund, höchstens 1000 × 1000 Pixel und 512 KB. Am besten nur das Bildzeichen,
                 quadratisch oder hochformatig – der Schriftzug steht daneben.
             </p>
 
@@ -134,6 +147,43 @@
                             <p class="mt-1 text-sm sg-error">{{ $message }}</p>
                         @enderror
                     </div>
+                @endforeach
+            </div>
+        </section>
+
+        <section class="sg-card">
+            <h2 class="text-lg font-semibold">Rechtliches</h2>
+            <p class="mt-1 text-sm sg-muted">
+                Wohin „Impressum“ und „Datenschutz“ unten auf jeder Seite und bei der Anmeldung führen. Ein Link auf die
+                Seiten Ihrer Website genügt, wenn dort derselbe Anbieter steht – die Datenschutzerklärung sollte dann
+                auch das Kundenportal abdecken.
+            </p>
+
+            <div class="mt-4 divide-y divide-line">
+                @foreach ($legalPages as $page => $legal)
+                    @php($mode = old("{$page}_mode", $branding->legalMode($page)->value))
+                    <fieldset class="space-y-3 py-5 first:pt-0 last:pb-0">
+                        <legend class="sg-label">{{ $legal['label'] }}</legend>
+
+                        <div class="flex flex-wrap gap-x-6 gap-y-2">
+                            @foreach (\App\Enums\LegalLinkMode::cases() as $option)
+                                <label class="flex items-center gap-2 text-sm text-ink">
+                                    <input type="radio" name="{{ $page }}_mode" value="{{ $option->value }}"
+                                           @checked($mode === $option->value)
+                                           class="size-4 border-line accent-brand">
+                                    {{ $option->label() }}
+                                </label>
+                            @endforeach
+                        </div>
+                        @error("{$page}_mode")
+                            <p class="text-sm sg-error">{{ $message }}</p>
+                        @enderror
+
+                        <x-field :name="$page.'_url'" :label="$legal['url_label']" type="url"
+                                 :value="$branding->getAttribute($page.'_url')"
+                                 placeholder="https://" maxlength="2048" autocomplete="url"
+                                 :hint="'Nur für „Eigener Link“. '.$legal['builtin_hint']" />
+                    </fieldset>
                 @endforeach
             </div>
         </section>

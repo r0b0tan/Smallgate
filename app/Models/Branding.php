@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\LegalLinkMode;
 use App\Policies\BrandingPolicy;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
@@ -9,14 +10,17 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * The portal's look, as set by an administrator under "Erscheinungsbild":
- * name, copyright holder, two colours and a logo for light and one for dark
+ * name, footer text, two colours and a logo for light and one for dark
  * backgrounds. One row at most; every empty column falls back to the built-in
  * look, so a fresh installation needs no row at all.
  *
  * The logo columns are not fillable: they point at files on the private disk
  * and are only ever set by the controller after it stored a validated upload.
  */
-#[Fillable(['name', 'copyright', 'brand_color', 'accent_color'])]
+#[Fillable([
+    'name', 'footer_text', 'brand_color', 'accent_color',
+    'imprint_mode', 'imprint_url', 'privacy_mode', 'privacy_url',
+])]
 #[UsePolicy(BrandingPolicy::class)]
 class Branding extends Model
 {
@@ -26,7 +30,7 @@ class Branding extends Model
 
     public const DIRECTORY = 'branding';
 
-    public const DEFAULT_COPYRIGHT = 'CLICKIT DIGITAL';
+    public const DEFAULT_FOOTER_TEXT = 'SMALLGATE powered by CLICKIT DIGITAL';
 
     public const DEFAULT_BRAND_COLOR = '#344f68';
 
@@ -35,9 +39,30 @@ class Branding extends Model
     /** Internal variant => the word used in the URL. */
     public const LOGO_VARIANTS = ['light' => 'hell', 'dark' => 'dunkel'];
 
+    /** The legal pages, with their built-in route. */
+    public const LEGAL_PAGES = ['imprint' => 'legal.imprint', 'privacy' => 'legal.privacy'];
+
     protected $table = 'branding';
 
     public $incrementing = false;
+
+    /**
+     * A row that does not exist yet still has the database defaults.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'imprint_mode' => 'builtin',
+        'privacy_mode' => 'builtin',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'imprint_mode' => LegalLinkMode::class,
+            'privacy_mode' => LegalLinkMode::class,
+        ];
+    }
 
     /**
      * The branding in effect, resolved once per request or queued job (see
@@ -77,9 +102,27 @@ class Branding extends Model
         return strcasecmp($name, 'Smallgate') === 0 ? [substr($name, 0, 5), substr($name, 5)] : null;
     }
 
-    public function copyrightHolder(): string
+    public function footerText(): string
     {
-        return $this->copyright ?? self::DEFAULT_COPYRIGHT;
+        return $this->footer_text ?? self::DEFAULT_FOOTER_TEXT;
+    }
+
+    public function legalMode(string $page): LegalLinkMode
+    {
+        return $this->getAttribute("{$page}_mode");
+    }
+
+    /**
+     * Where the footer link to "imprint" or "privacy" points, or null when it
+     * is not shown at all.
+     */
+    public function legalUrl(string $page): ?string
+    {
+        return match ($this->legalMode($page)) {
+            LegalLinkMode::Builtin => route(self::LEGAL_PAGES[$page]),
+            LegalLinkMode::Link => $this->getAttribute("{$page}_url"),
+            LegalLinkMode::Hidden => null,
+        };
     }
 
     public function hasLogo(string $variant): bool

@@ -239,17 +239,23 @@ scheduler is needed. New actions are cases of `App\Enums\ActivityAction` plus a 
 that widens the `activities_action_check` constraint.
 
 **Erscheinungsbild** — under **Erscheinungsbild** the administrator sets the
-name next to the logo (also in the browser tab and the mails), the copyright
-holder in the footer, a main and an accent colour, and a logo each for light
-and dark backgrounds. Every empty field falls back to the built-in look
-(`APP_NAME`, the "S" mark, the navy theme). The colours reach the page as
+name next to the logo (also in the browser tab and the mails), the footer text
+(also in the mails), a main and an accent colour, and a logo each for light and
+dark backgrounds. Every empty field falls back to the built-in look
+(`APP_NAME`, "SMALLGATE powered by CLICKIT DIGITAL", the "S" mark, the navy
+theme). The colours reach the page as
 `/erscheinungsbild.css`, loaded after `app.css` — the CSP forbids inline
 styles — and the shades are mixed by the browser with `color-mix()`. Logos
 are PNG or WebP only (an SVG from the portal's own origin could carry script),
 stored on the private disk and served by `BrandingAssetController` under a
 versioned URL with `nosniff` and a sandboxing CSP. Both routes run without a
 session. Without a dark logo, the light one sits on a white tile on the
-sign-in panel.
+sign-in panel. The logos also replace the favicon — with both set, the light
+one for a light browser tab and the dark one for a dark tab.
+**Impressum** and **Datenschutz** each lead to the built-in page (default), to
+the operator's own page by `https://` link — the built-in route then redirects
+there — or are switched off, in which case the footer link disappears and the
+built-in route answers 404.
 
 **Preview targets** — paths and upstream URLs come exclusively from an allowlist
 in `config/previews.php`. Path traversal is resolved lexically; existing paths
@@ -429,6 +435,8 @@ application behind a TLS-terminating proxy sees `http` instead of `https`.
 domain — the reasoning is in ADR 0001.
 
 Imprint and privacy policy are placeholder pages configured through `LEGAL_*`.
+Under **Erscheinungsbild** they can be replaced by links to the operator's own
+pages, or switched off.
 They are written for German law (§ 5 DDG, GDPR); if you operate elsewhere,
 replace the wording in `resources/views/legal/`. Either way the final text needs
 legal review before you go live.

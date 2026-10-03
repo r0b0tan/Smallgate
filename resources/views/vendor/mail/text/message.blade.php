@@ -1,4 +1,4 @@
-{{-- Laravel's mail frame, with the name and copyright holder from the
+{{-- Laravel's mail frame, with the name and footer text from the
      administration's "Erscheinungsbild" instead of APP_NAME. --}}
 @php($branding = \App\Models\Branding::current())
 <x-mail::layout>
@@ -24,7 +24,7 @@
     {{-- Footer --}}
     <x-slot:footer>
         <x-mail::footer>
-            © {{ date('Y') }} {{ $branding->copyrightHolder() }}
+            {{ $branding->footerText() }}
         </x-mail::footer>
     </x-slot:footer>
 </x-mail::layout>

@@ -67,20 +67,20 @@
             <form method="POST" action="{{ route('logout') }}" class="mt-auto">
                 @csrf
                 <button type="submit"
-                        class="group relative flex h-10.5 w-full items-center gap-3 rounded-md bg-brand px-2.25 text-white
-                               transition-colors hover:bg-brand-dark">
+                        class="group relative flex h-10.5 w-full items-center gap-3 rounded-md px-2.25 text-ink-muted
+                               transition-colors hover:bg-brand hover:text-white active:bg-brand-dark active:text-white">
                     <x-icon name="logout" class="size-6" />
                     <span class="sg-rail-label">Abmelden</span>
                 </button>
             </form>
 
-            {{-- A small round handle on the rail's edge, a mid grey that stands
-                 out against rail and page alike. Its tooltip is also its
-                 accessible name: only the phrase for the current state is
-                 displayed. It needs app.js and stays hidden without it; the
+            {{-- A small round handle on the rail's edge, a third of it showing
+                 past the rail, in a mid grey that stands out against rail and
+                 page alike. Its tooltip is also its accessible name: only the
+                 phrase for the current state is displayed. It needs app.js and stays hidden without it; the
                  labels then still show on hover. --}}
             <button type="button" hidden data-rail-toggle aria-expanded="{{ $railOpen ? 'true' : 'false' }}"
-                    class="group absolute left-full top-1/2 flex size-7 -translate-x-1/2 -translate-y-1/2 items-center
+                    class="group absolute left-full top-1/2 flex size-7 -translate-x-2/3 -translate-y-1/2 items-center
                            justify-center rounded-full bg-handle text-white shadow-card transition-colors hover:bg-quiet">
                 <x-icon name="chevron-right" class="size-4 stroke-[2.2] transition-transform duration-200 rail-open:rotate-180" />
                 <span class="pointer-events-none absolute left-full z-40 ml-3 whitespace-nowrap rounded-md bg-ink px-2.5 py-1.5
@@ -161,10 +161,9 @@
         <footer class="mx-4 mt-10 flex flex-wrap justify-between gap-4 border-t border-line pb-28 pt-6 text-sm sg-muted sm:mx-6
                        md:mx-0 md:mt-0 md:h-7 md:shrink-0 md:flex-nowrap md:items-center md:bg-paper md:px-6 md:py-0
                        md:text-xs lg:px-10">
-            <span>&copy; {{ date('Y') }} {{ $branding->copyrightHolder() }}</span>
+            <span>{{ $branding->footerText() }}</span>
             <span class="flex gap-6">
-                <a class="hover:text-ink hover:underline" href="{{ route('legal.imprint') }}">Impressum</a>
-                <a class="hover:text-ink hover:underline" href="{{ route('legal.privacy') }}">Datenschutz</a>
+                <x-legal-links />
             </span>
         </footer>
 

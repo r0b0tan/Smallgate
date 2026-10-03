@@ -25,8 +25,7 @@
 
         <footer class="px-4 pb-8">
             <div class="flex justify-center gap-6 text-sm sg-muted">
-                <a class="hover:text-ink hover:underline" href="{{ route('legal.imprint') }}">Impressum</a>
-                <a class="hover:text-ink hover:underline" href="{{ route('legal.privacy') }}">Datenschutz</a>
+                <x-legal-links />
             </div>
         </footer>
 

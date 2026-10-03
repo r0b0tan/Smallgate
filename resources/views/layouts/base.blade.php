@@ -8,8 +8,19 @@
     {{-- The portal must never show up in a search index. --}}
     <meta name="robots" content="noindex, nofollow">
     <title>@yield('title', 'Kundenportal') · {{ $branding->displayName() }}</title>
-    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="32x32">
-    <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+    {{-- The administrator's logo, if there is one: the light one for a light
+         browser tab, the dark one for a dark tab, either one alone for both. --}}
+    @if ($branding->hasAnyLogo())
+        @foreach (['light', 'dark'] as $variant)
+            @if ($branding->hasLogo($variant))
+                <link rel="icon" href="{{ $branding->logoUrl($variant) }}" type="{{ $branding->getAttribute("logo_{$variant}_mime") }}"
+                      @if ($branding->hasLogo('light') && $branding->hasLogo('dark')) media="(prefers-color-scheme: {{ $variant }})" @endif>
+            @endif
+        @endforeach
+    @else
+        <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="32x32">
+        <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+    @endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     {{-- The administrator's colours, after app.css so they win. --}}
     @if ($stylesheet = $branding->stylesheetUrl())

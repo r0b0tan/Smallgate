@@ -8,6 +8,19 @@
     $contactEmail = (string) config('smallgate.contact_email');
     $branding = \App\Models\Branding::current();
     $parts = $branding->nameParts();
+
+    // The panel holds about nine capitals at full size. A longer name gets a
+    // smaller size on the two-column card, chosen by its longest word, so
+    // words fit whole -- no hyphens-auto, which splits words even when they
+    // would fit on a line of their own. The tagline then steps down too, so
+    // the name stays the larger of the two.
+    $name = $branding->displayName();
+    $longestWord = max(array_map('mb_strlen', preg_split('/\s+/u', $name, -1, PREG_SPLIT_NO_EMPTY) ?: ['']));
+    [$nameSize, $taglineSize] = match (true) {
+        $longestWord <= 9 && mb_strlen($name) <= 20 => ['leading-none', ''],
+        $longestWord <= 12 && mb_strlen($name) <= 40 => ['leading-tight md:text-[1.625rem]', 'md:text-lg'],
+        default => ['leading-tight md:text-[1.3125rem]', 'md:text-base'],
+    };
 @endphp
 
 @section('body')
@@ -17,15 +30,15 @@
                 <div class="sg-login-panel relative overflow-hidden px-6 py-8 text-white sm:px-14 sm:py-10 md:pt-14 md:pb-48">
                     <x-logo-mark on="dark" class="h-14 w-auto text-sky" />
 
-                    <p class="mt-4 text-[2.125rem] leading-none uppercase tracking-[0.01em] break-words">
+                    <p class="mt-4 text-[2.125rem] {{ $nameSize }} uppercase tracking-[0.01em] break-words">
                         @if ($parts)
                             <span class="font-semibold text-white">{{ $parts[0] }}</span><span class="font-semibold text-slate-accent">{{ $parts[1] }}</span>
                         @else
-                            <span class="font-semibold text-white">{{ $branding->displayName() }}</span>
+                            <span class="font-semibold text-white">{{ $name }}</span>
                         @endif
                     </p>
 
-                    <p class="mt-6 text-[1.3125rem] leading-snug text-slate-text">
+                    <p class="mt-6 text-[1.3125rem] leading-snug text-slate-text {{ $taglineSize }}">
                         Entwürfe ansehen.<br>
                         Rückmeldung geben.
                     </p>
@@ -108,8 +121,7 @@
             </div>
 
             <footer class="mt-6 flex justify-center gap-6 text-sm sg-muted">
-                <a class="hover:text-ink hover:underline" href="{{ route('legal.imprint') }}">Impressum</a>
-                <a class="hover:text-ink hover:underline" href="{{ route('legal.privacy') }}">Datenschutz</a>
+                <x-legal-links />
             </footer>
         </main>
 

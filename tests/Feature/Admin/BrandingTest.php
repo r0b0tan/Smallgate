@@ -1,7 +1,7 @@
 <?php
 
 /**
- * "Erscheinungsbild": an administrator sets name, copyright, colours and two
+ * "Erscheinungsbild": an administrator sets name, footer text, colours and two
  * logos. Nobody else can; everybody sees the result, the sign-in page and the
  * mails included. Uploaded logos are raster images only and are served from a
  * sandboxed, versioned route.
@@ -79,13 +79,13 @@ it('sends guests to the sign-in page', function () {
 
 /* ------------------------------------------------------------ text, colours */
 
-it('saves name, copyright and colours and logs the change', function () {
+it('saves name, footer text and colours and logs the change', function () {
     $admin = $this->admin();
 
     $this->actingAs($admin)
         ->patch(route('admin.branding.update'), [
             'name' => 'Holzmann Portal',
-            'copyright' => 'Holzmann Bau GmbH',
+            'footer_text' => 'Holzmann Bau GmbH · Ihr Partner am Bau',
             'brand_color' => '#AA3300',
             'accent_color' => '#0066cc',
         ])
@@ -96,7 +96,7 @@ it('saves name, copyright and colours and logs the change', function () {
 
     expect($branding->id)->toBe(Branding::ID)
         ->and($branding->name)->toBe('Holzmann Portal')
-        ->and($branding->copyright)->toBe('Holzmann Bau GmbH')
+        ->and($branding->footer_text)->toBe('Holzmann Bau GmbH · Ihr Partner am Bau')
         ->and($branding->brand_color)->toBe('#aa3300')
         ->and($branding->accent_color)->toBe('#0066cc');
 
@@ -120,7 +120,7 @@ it('falls back to the built-in look for empty fields', function () {
     brand(['name' => 'Holzmann Portal', 'brand_color' => '#aa3300']);
 
     $this->actingAs($this->admin())
-        ->patch(route('admin.branding.update'), ['name' => '', 'copyright' => '', 'brand_color' => '', 'accent_color' => ''])
+        ->patch(route('admin.branding.update'), ['name' => '', 'footer_text' => '', 'brand_color' => '', 'accent_color' => ''])
         ->assertSessionHasNoErrors();
 
     $branding = Branding::sole();
@@ -128,7 +128,7 @@ it('falls back to the built-in look for empty fields', function () {
     expect($branding->name)->toBeNull()
         ->and($branding->brand_color)->toBeNull()
         ->and($branding->displayName())->toBe(config('app.name'))
-        ->and($branding->copyrightHolder())->toBe(Branding::DEFAULT_COPYRIGHT)
+        ->and($branding->footerText())->toBe('SMALLGATE powered by CLICKIT DIGITAL')
         ->and($branding->stylesheetUrl())->toBeNull();
 });
 
@@ -232,7 +232,7 @@ it('rejects logos that are not PNG or WebP images of a sensible size', function 
         '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'),
     'html named png' => fn () => UploadedFile::fake()->createWithContent('logo.png', '<html><script>alert(1)</script>'),
     'too small' => fn () => pngUpload('logo.png', 16, 16),
-    'too large' => fn () => pngUpload('logo.png', 2400, 100),
+    'too large' => fn () => pngUpload('logo.png', 1001, 100),
     'too heavy' => fn () => UploadedFile::fake()->createWithContent('logo.png', pngBytes(64, 64))->size(600),
 ]);
 
@@ -292,16 +292,17 @@ it('serves colours and logos without a session', function () {
 
 /* -------------------------------------------------------------- rendering */
 
-it('shows name and copyright holder across the portal', function () {
-    brand(['name' => 'Holzmann Portal', 'copyright' => 'Holzmann Bau GmbH']);
+it('shows name and footer text across the portal', function () {
+    brand(['name' => 'Holzmann Portal', 'footer_text' => 'Holzmann Bau GmbH']);
 
     $this->actingAs($this->customerUser())
         ->get(route('portal.dashboard'))
         ->assertOk()
         ->assertSee('<title>Ihr Projektstatus · Holzmann Portal</title>', false)
         ->assertSee('Holzmann Portal – zur Startseite')
-        ->assertSee('&copy; '.date('Y').' Holzmann Bau GmbH', false)
-        ->assertDontSee('CLICKIT DIGITAL');
+        ->assertSee('<span>Holzmann Bau GmbH</span>', false)
+        ->assertDontSee('CLICKIT DIGITAL')
+        ->assertDontSee('&copy;', false);
 });
 
 it('keeps the built-in look without any branding', function () {
@@ -309,6 +310,13 @@ it('keeps the built-in look without any branding', function () {
         ->assertOk()
         ->assertSee('<span class="font-semibold text-white">Small</span>', false)
         ->assertDontSee('/erscheinungsbild/logo/', false);
+});
+
+it('names product and maker in the footer by default', function () {
+    $this->actingAs($this->customerUser())
+        ->get(route('portal.dashboard'))
+        ->assertOk()
+        ->assertSee('<span>SMALLGATE powered by CLICKIT DIGITAL</span>', false);
 });
 
 it('puts the right logo on the dark sign-in panel', function () {
@@ -334,8 +342,34 @@ it('puts the right logo on the dark sign-in panel', function () {
         ->assertDontSee('rounded-lg bg-white p-2.5', false);
 });
 
-it('carries the name and copyright holder into the mails', function () {
-    brand(['name' => 'Holzmann Portal', 'copyright' => 'Holzmann Bau GmbH']);
+it('uses the logos as favicon', function () {
+    $this->get(route('login'))->assertSee('favicon.svg', false);
+
+    $disk = Storage::disk(Branding::DISK);
+    $disk->put('branding/hell.png', pngBytes(64, 64));
+    $disk->put('branding/dunkel.png', pngBytes(64, 64));
+
+    // One logo: the icon for every tab.
+    $branding = brand(['logo_light_path' => 'branding/hell.png', 'logo_light_mime' => 'image/png']);
+
+    $this->get(route('login'))
+        ->assertOk()
+        ->assertSee('<link rel="icon" href="'.$branding->logoUrl('light').'" type="image/png"', false)
+        ->assertDontSee('prefers-color-scheme', false)
+        ->assertDontSee('favicon.svg', false);
+
+    // Both: one per tab colour.
+    $branding = brand(['logo_dark_path' => 'branding/dunkel.png', 'logo_dark_mime' => 'image/png']);
+
+    $this->get(route('login'))
+        ->assertOk()
+        ->assertSee('media="(prefers-color-scheme: light)"', false)
+        ->assertSee('media="(prefers-color-scheme: dark)"', false)
+        ->assertSee($branding->logoUrl('dark'), false);
+});
+
+it('carries name and footer text into the mails', function () {
+    brand(['name' => 'Holzmann Portal', 'footer_text' => 'Holzmann Bau GmbH']);
 
     $invitation = Invitation::factory()->create();
     $mail = (new InvitationNotification('token'))->toMail($invitation);
@@ -343,5 +377,6 @@ it('carries the name and copyright holder into the mails', function () {
 
     expect($mail->subject)->toBe('Ihr Zugang zum Kundenportal von Holzmann Portal')
         ->and($html)->toContain('Holzmann Portal')
-        ->and($html)->toContain('© '.date('Y').' Holzmann Bau GmbH');
+        ->and($html)->toContain('Holzmann Bau GmbH')
+        ->and($html)->not->toContain('©');
 });

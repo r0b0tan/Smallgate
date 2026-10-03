@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 /**
- * "Erscheinungsbild": name, copyright, colours and logos of the portal.
+ * "Erscheinungsbild": name, footer text, colours and logos of the portal.
  */
 class BrandingController extends Controller
 {
@@ -31,7 +31,10 @@ class BrandingController extends Controller
 
         $this->authorize('update', $branding);
 
-        $branding->fill($request->safe()->only(['name', 'copyright', 'brand_color', 'accent_color']));
+        $branding->fill($request->safe()->only([
+            'name', 'footer_text', 'brand_color', 'accent_color',
+            'imprint_mode', 'imprint_url', 'privacy_mode', 'privacy_url',
+        ]));
 
         $disk = Storage::disk(Branding::DISK);
         $replaced = [];

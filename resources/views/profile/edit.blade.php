@@ -8,6 +8,9 @@
     <div class="grid gap-6 lg:grid-cols-2">
         <div class="sg-card">
             <h2 class="text-lg font-semibold">Angaben</h2>
+            <p class="mt-1 text-sm sg-faint">
+                Mit dieser E-Mail-Adresse melden Sie sich an.
+            </p>
 
             <form method="POST" action="{{ route('profile.update') }}" class="mt-4 space-y-4">
                 @csrf

@@ -113,7 +113,10 @@ sein.
 3. Im Browser anmelden. In den Entwicklerwerkzeugen müssen die Cookies
    `Secure` und `HttpOnly` tragen.
 4. Impressum und Datenschutzerklärung (`/impressum`, `/datenschutz`) prüfen
-   und rechtlich prüfen lassen.
+   und rechtlich prüfen lassen. Alternativ unter „Erscheinungsbild“ auf die
+   Seiten der eigenen Website verlinken – die Datenschutzerklärung muss dann
+   auch das Kundenportal abdecken (Zugangsdaten, Cookies, Rückmeldungen,
+   Protokoll). Für den Betrieb mit echten Kunden nicht ausblenden.
 5. Eine Einladung an eine eigene Adresse schicken und den Link einlösen. Dann
    ist auch die Mail geprüft.
 
