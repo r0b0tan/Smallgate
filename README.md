@@ -1,7 +1,7 @@
 # Smallgate
 
-A very small, self-hosted client portal. Your clients sign in and see their own
-projects and the website previews that belong to them. Nothing else.
+A very small, self-hosted client portal. Your clients sign in, look at the
+current draft of their website and tell you whether it fits. Nothing else.
 
 Built for web agencies, freelancers and in-house teams who keep clients in the
 loop by email and just need one honest place to answer *"can I see it?"* —
@@ -12,18 +12,54 @@ the MIT licence: use it, change it, run it for your own clients.
 chat, no notification centre. Invoices, documents and discussions stay in email,
 where they already work.
 
-## Screens in one paragraph
+- [A short tour](#a-short-tour)
+- [Stack](#stack) · [Requirements](#requirements) · [Setup](#setup)
+- [Security](#security) · [Previews](#previews) · [Tests](#tests)
+- [Configuration](#configuration) · [Running in production](#running-in-production)
+- [Project structure](#project-structure) · [Contributing](#contributing) · [Licence](#licence)
 
-An administrator creates customers, projects and previews, and invites the
-people who may see them. A customer signs in and lands on a single page: the
-status of each project, every draft as a card with a screenshot, an **Entwurf
-ansehen** button and two answers — **Passt so** or **Änderung wünschen**, with an
-optional note — and beside it the last three answers. The speech bubble in the
-navigation opens **Nachrichten**, the paginated archive of every answer given;
-it is not a chat, replies still come by email (to `CONTACT_EMAIL`). The
-administrator sees the answers on the project page and the dashboard, and
-under **Protokoll** a log of who did what. There is no public sign-up: accounts
-exist only because somebody was invited.
+## A short tour
+
+The interface is German; the screenshots show the demo data from the seeder.
+
+### Sign-in
+
+<img src="docs/screenshots/login.png" alt="Sign-in page with email address and password" width="640">
+
+There is no public sign-up. Accounts exist only because an administrator
+invited somebody; the invitation mail leads to a page where the new user sets
+a password. Wrong password, unknown address, blocked account — the sign-in
+answers all of them with the same message.
+
+### For your clients
+
+<img src="docs/screenshots/kunden-dashboard.png" alt="Customer dashboard: the current draft with screenshot, the customer's change request and the latest answers" width="800">
+
+A customer lands on a single page per project: its status, the current draft
+as a card with a screenshot, an **Entwurf ansehen** button and two answers —
+**Passt so** or **Änderung wünschen**, with an optional note. Beside it are the
+last answers. The speech bubble in the navigation opens **Nachrichten**, the
+archive of every answer given. It is not a chat: replies still come by email
+(to `CONTACT_EMAIL`).
+
+Customers see only their own projects, change their own password and answer
+drafts. They have no other write access.
+
+### For administrators
+
+<img src="docs/screenshots/admin-dashboard.png" alt="Admin dashboard: open previews, open invitations, latest feedback and recent projects" width="800">
+
+The dashboard shows what is open: drafts and failed provisionings, invitations
+not yet redeemed, the latest answers from customers and the newest projects.
+From there an administrator
+
+- creates customers and projects, and invites the people who may see them,
+- adds previews, releases them with **Bereitstellen** and re-creates their
+  screenshot,
+- creates the project's folder on the server with **Ordner anlegen**,
+- blocks accounts, resends or revokes invitations,
+- sets name, colours, logos and legal links under **Erscheinungsbild**,
+- and reads under **Protokoll** who did what.
 
 ## Stack
 
@@ -130,7 +166,7 @@ Every further account is created through the invitation flow in the portal.
 
 ### Language
 
-The user interface, validation messages and legal pages are **German**. Code,
+The user interface and validation messages are **German**. Code,
 comments and tests are English. Translating the UI means going through
 `resources/views` and `lang/` — there is no locale switcher, and the strings are
 not yet extracted into translation files.
@@ -151,18 +187,6 @@ uid/gid:
 ./sg shell               # shell in the app container
 ./sg logs                # follow logs
 ```
-
-## Roles
-
-**Administrator** — creates and edits customers, projects and previews, invites
-client users, resends invitations, blocks accounts, sees everything.
-
-**Customer** — signs in, changes their own password, sees only their own
-projects and previews, and answers each draft with "Passt so" or "Änderung
-wünschen". No other write access.
-
-There is **no public registration**. Accounts come into existence only through
-an administrator's invitation.
 
 ## Security
 
@@ -273,6 +297,18 @@ protect against symlinks created after the check (TOCTOU), nor against targets
 that do not exist yet. As long as only `NullPreviewProvisioner` exists, no
 connection is opened and no file is served — before real serving lands, both
 checks must be repeated and completed at the actual I/O point.
+
+**Project directories** — **Ordner anlegen** on the project page creates
+`<customer-slug>/<project-slug>` below `PROJECT_DIRECTORY_ROOT` (default
+`storage/app/previews`), and that is the one exception to "Smallgate changes no
+server files". The name comes only from the two slugs, which the database
+restricts to `[a-z0-9-]`. It is fixed on the first click and never follows a
+rename. The queue worker creates it level by level, refuses symlinks, checks
+the result with `realpath()` and only ever creates: no deleting, renaming,
+`chmod`, `sudo` or shell command. The root itself must already exist and be
+writable by the worker. The reasoning, and how to point it at a deployment
+directory outside the volume, is in
+[docs/adr/0002-project-directories.md](docs/adr/0002-project-directories.md).
 
 ## Previews
 
@@ -452,7 +488,7 @@ together with `compose.yaml`:
 | Assets | `npm run build` / Vite on the host | built in the image |
 | Database | published on `localhost:55432` | internal network only |
 | Mail | Mailpit | your SMTP server |
-| Web port | all interfaces | `127.0.0.1` only |
+| Ports | `127.0.0.1` unless `DEV_BIND` says otherwise | web port on `127.0.0.1` only (`WEB_BIND`) |
 | nginx | answers every host | answers `PORTAL_HOST` only, HSTS |
 | Migrations | by hand | the one-shot `migrate` service, before app and worker start |
 
@@ -574,14 +610,15 @@ provisioned, screenshotted nor linked to.
 ```
 app/
 ├── Contracts/          PreviewProvisioner -- the only real system boundary
-├── Enums/              UserRole, ProjectStatus, PreviewStatus, PreviewTargetType
-├── Jobs/               GeneratePreviewThumbnail
+├── Enums/              roles, statuses, target types, ActivityAction
+├── Jobs/               GeneratePreviewThumbnail, CreateProjectDirectory
 ├── Http/
-│   ├── Controllers/    Auth, Admin, Portal, Profile, Legal
+│   ├── Controllers/    Auth, Admin, Portal, Profile, Legal, BrandingAsset
 │   ├── Middleware/     EnsureUserIsAdmin, EnsureAccountIsActive
 │   └── Requests/       server-side validation
-├── Models/             User, Customer, Project, Preview, PreviewFeedback, Invitation
-├── Notifications/      invitation, password reset
+├── Models/             User, Customer, Project, Preview, PreviewFeedback,
+│                       Invitation, Activity, Branding
+├── Notifications/      invitation, password reset, email changed
 ├── Policies/           explicit, without a blanket Gate::before
 ├── Rules/              PreviewHostname, AllowedPreviewTarget
 └── Services/
@@ -590,6 +627,7 @@ app/
 docker/                 PHP image (dev and prod stages), nginx, PostgreSQL init
 scripts/                preview-screenshot.mjs (Playwright, run by the worker), backup.sh
 docs/adr/               architecture decision records
+docs/screenshots/       the pictures in this README
 ```
 
 No repository pattern over Eloquent. No interfaces except at an actual system
