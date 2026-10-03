@@ -29,6 +29,9 @@
     --color-quiet: #6b7682;      /* the grey second choice, white on it ~4.6:1 */
     --color-quiet-dark: #58626d;
     --color-handle: #8a95a1;     /* the rail's toggle, white icon on it ~3:1 -- enough for a graphic */
+    --color-accent: #2f6299;     /* a clearer blue for small marks that should catch the eye, white on it ~6.3:1 */
+    --color-accent-dark: #244f7d;
+    --color-accent-soft: #dbe6f2;
 
     /* Sign-in page: a slate panel next to the form, on a cool blue-grey ground. */
     --color-ground: #dee5ee;
@@ -68,6 +71,35 @@
     :focus-visible {
         outline: 2px solid var(--color-brand);
         outline-offset: 2px;
+    }
+
+    /*
+     * A blue scrollbar, so long pages visibly scroll. Chromium and Safari take
+     * the pseudo-elements; Firefox only understands scrollbar-color.
+     */
+    ::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: var(--color-accent-soft);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--color-accent);
+        border: 3px solid var(--color-accent-soft);
+        border-radius: 9999px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--color-accent-dark);
+    }
+
+    @supports not selector(::-webkit-scrollbar) {
+        html {
+            scrollbar-color: var(--color-accent) var(--color-accent-soft);
+        }
     }
 
     /* The account menu is a <details>; its marker is drawn by the layout. */
@@ -254,30 +286,6 @@
         margin-top: 0;
         padding-top: 0;
         padding-bottom: 0;
-        visibility: hidden;
-    }
-}
-
-/*
- * The footer bar (md and up) slides in over the first few rem of scrolling,
- * driven by the scroll position -- no JavaScript. A page that cannot scroll
- * has no active scroll timeline, so the bar simply stays; browsers without
- * scroll-driven animations show it all the time. Imprint and privacy policy
- * are always reachable either way.
- */
-@supports (animation-timeline: scroll()) {
-    @media (min-width: 48rem) {
-        .sg-footer-bar {
-            animation: sg-footer-in linear both;
-            animation-timeline: scroll(root block);
-            animation-range: 0 4rem;
-        }
-    }
-}
-
-@keyframes sg-footer-in {
-    from {
-        transform: translateY(100%);
         visibility: hidden;
     }
 }

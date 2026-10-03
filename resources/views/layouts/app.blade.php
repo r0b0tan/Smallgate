@@ -32,7 +32,10 @@
 @endphp
 
 @section('body')
-    <div class="min-h-full transition-[padding] duration-200 ease-out motion-reduce:transition-none md:pl-16 md:rail-open:pl-56" data-rail="{{ $railOpen ? 'open' : 'closed' }}">
+    {{-- From md up the shell is exactly one screen high and only the page
+         between top bar and footer bar scrolls; on phones the whole document
+         scrolls as usual. --}}
+    <div class="min-h-full transition-[padding] duration-200 ease-out motion-reduce:transition-none md:flex md:h-dvh md:flex-col md:pl-16 md:rail-open:pl-56" data-rail="{{ $railOpen ? 'open' : 'closed' }}">
         {{-- Icon rail. Each label sits next to its icon on hover and focus, and
              is always there for screen readers. Expanded, the labels are
              written out next to the icons. --}}
@@ -87,7 +90,7 @@
             </button>
         </aside>
 
-        <header class="sticky top-0 z-20 border-b border-line bg-paper/90 backdrop-blur-md">
+        <header class="sticky top-0 z-20 shrink-0 border-b border-line bg-paper/90 backdrop-blur-md">
             <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
                 <a href="{{ route('home') }}" aria-label="{{ config('app.name') }} – zur Startseite">
                     {{-- The rail carries the mark on wider screens. --}}
@@ -99,7 +102,7 @@
                     <summary class="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-full py-1 pl-3 pr-2
                                     transition-colors hover:bg-white">
                         <span class="hidden max-w-64 truncate text-sm font-medium sm:inline">{{ $accountLabel }}</span>
-                        <span class="flex size-9 items-center justify-center rounded-full bg-brand-soft text-sm font-bold text-brand"
+                        <span class="flex size-9 items-center justify-center rounded-full bg-accent text-sm font-bold text-white"
                               aria-hidden="true">{{ $initials }}</span>
                         <x-icon name="chevron-down" class="size-4 text-ink-muted" />
                         <span class="sr-only">Konto-Menü</span>
@@ -126,40 +129,42 @@
             </div>
         </header>
 
-        <main class="max-w-7xl px-4 pb-28 pt-6 sm:px-6 md:pb-20 lg:px-10 lg:pt-8">
-            @hasSection('header')
-                <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
-                    <div class="min-w-0">
-                        @hasSection('breadcrumb')
-                            <div class="mb-1 text-sm sg-muted">@yield('breadcrumb')</div>
-                        @endif
-                        <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">@yield('header')</h1>
-                        @hasSection('subheader')
-                            <p class="mt-1 text-sm sg-muted">@yield('subheader')</p>
+        {{-- Positioned, so absolutely placed content (sr-only labels among it)
+             stays inside the scrolling area instead of stretching the window. --}}
+        <div class="md:relative md:min-h-0 md:flex-1 md:overflow-y-auto">
+            <main class="max-w-7xl px-4 pb-6 pt-6 sm:px-6 md:pb-10 lg:px-10 lg:pt-8">
+                @hasSection('header')
+                    <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+                        <div class="min-w-0">
+                            @hasSection('breadcrumb')
+                                <div class="mb-1 text-sm sg-muted">@yield('breadcrumb')</div>
+                            @endif
+                            <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">@yield('header')</h1>
+                            @hasSection('subheader')
+                                <p class="mt-1 text-sm sg-muted">@yield('subheader')</p>
+                            @endif
+                        </div>
+                        @hasSection('actions')
+                            <div class="flex flex-wrap gap-2">@yield('actions')</div>
                         @endif
                     </div>
-                    @hasSection('actions')
-                        <div class="flex flex-wrap gap-2">@yield('actions')</div>
-                    @endif
-                </div>
-            @endif
+                @endif
 
-            @yield('content')
+                @yield('content')
+            </main>
+        </div>
 
-            {{-- On wider screens a slim bar like the top bar, slid in once the page
-                 is scrolled; on phones it stays at the end of the page, above
-                 the bottom bar. --}}
-            <footer class="sg-footer-bar mt-16 flex flex-wrap justify-between gap-4 border-t border-line pt-6 text-sm sg-muted
-                           md:fixed md:right-0 md:bottom-0 md:left-16 md:z-20 md:rail-open:left-56 md:mt-0 md:h-10 md:flex-nowrap md:items-center
-                           md:bg-paper/90 md:px-6 md:pt-0 md:text-xs md:backdrop-blur-md md:transition-[left] md:duration-200
-                           md:ease-out md:motion-reduce:transition-none lg:px-10">
-                <span>&copy; {{ date('Y') }} CLICKIT DIGITAL</span>
-                <span class="flex gap-6">
-                    <a class="hover:text-ink hover:underline" href="{{ route('legal.imprint') }}">Impressum</a>
-                    <a class="hover:text-ink hover:underline" href="{{ route('legal.privacy') }}">Datenschutz</a>
-                </span>
-            </footer>
-        </main>
+        {{-- On wider screens a slim bar at the bottom edge, outside the scrolling
+             page; on phones it ends the page, above the bottom bar. --}}
+        <footer class="mx-4 mt-10 flex flex-wrap justify-between gap-4 border-t border-line pb-28 pt-6 text-sm sg-muted sm:mx-6
+                       md:mx-0 md:mt-0 md:h-7 md:shrink-0 md:flex-nowrap md:items-center md:bg-paper md:px-6 md:py-0
+                       md:text-xs lg:px-10">
+            <span>&copy; {{ date('Y') }} CLICKIT DIGITAL</span>
+            <span class="flex gap-6">
+                <a class="hover:text-ink hover:underline" href="{{ route('legal.imprint') }}">Impressum</a>
+                <a class="hover:text-ink hover:underline" href="{{ route('legal.privacy') }}">Datenschutz</a>
+            </span>
+        </footer>
 
         {{-- The rail as a bottom bar on phones, labels written out. --}}
         <nav class="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 backdrop-blur-md md:hidden"
