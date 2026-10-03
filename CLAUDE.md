@@ -50,8 +50,8 @@ oder `artisan` direkt auf dem Host aufrufen. Immer `./sg`:
   Laravels `Hash`-Fassade.
 - `role`, `customer_id`, `is_active`, `project_id`, `provisioned_at` sind
   **nie** `$fillable`. Immer explizit in Admin-Code zuweisen. Ebenso
-  `previews.version`, die `thumbnail_*`-Spalten und bei Rückmeldungen
-  `preview_id`, `user_id`, `preview_version`.
+  `previews.version`, die `thumbnail_*`-Spalten, die `logo_*`-Spalten von
+  `branding` und bei Rückmeldungen `preview_id`, `user_id`, `preview_version`.
 - Fremde oder unbekannte IDs → **404**, niemals 403. Ein 403 bestätigt die
   Existenz der Ressource.
 - Sichtbarkeitsprüfungen laufen über `Project::visibleTo()` bzw.
@@ -72,6 +72,9 @@ oder `artisan` direkt auf dem Host aufrufen. Immer `./sg`:
   `PreviewScreenshotter` oder dem Skript brauchen begleitende Tests.
 - Vorschaubilder liegen auf der privaten Disk und werden nur über autorisierte
   Routen ausgeliefert – Kunden nur das Bild der aktuellen Version.
+- Logos im Erscheinungsbild: nur PNG/WebP, nie SVG. Auslieferung nur über
+  `BrandingAssetController` mit gespeichertem MIME-Typ, `nosniff` und
+  Sandbox-CSP. Farben gelangen nur als validierter Hex-Wert ins Stylesheet.
 
 ## Preview-Provisioning
 

@@ -238,6 +238,19 @@ account is not recorded at all. Entries are deleted after
 scheduler is needed. New actions are cases of `App\Enums\ActivityAction` plus a migration
 that widens the `activities_action_check` constraint.
 
+**Erscheinungsbild** — under **Erscheinungsbild** the administrator sets the
+name next to the logo (also in the browser tab and the mails), the copyright
+holder in the footer, a main and an accent colour, and a logo each for light
+and dark backgrounds. Every empty field falls back to the built-in look
+(`APP_NAME`, the "S" mark, the navy theme). The colours reach the page as
+`/erscheinungsbild.css`, loaded after `app.css` — the CSP forbids inline
+styles — and the shades are mixed by the browser with `color-mix()`. Logos
+are PNG or WebP only (an SVG from the portal's own origin could carry script),
+stored on the private disk and served by `BrandingAssetController` under a
+versioned URL with `nosniff` and a sandboxing CSP. Both routes run without a
+session. Without a dark logo, the light one sits on a white tile on the
+sign-in panel.
+
 **Preview targets** — paths and upstream URLs come exclusively from an allowlist
 in `config/previews.php`. Path traversal is resolved lexically; existing paths
 are additionally checked against symlinks with `realpath()`. Upstream URLs must
