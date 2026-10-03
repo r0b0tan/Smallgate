@@ -124,4 +124,25 @@ return [
         'retention_days' => (int) env('ACTIVITY_RETENTION_DAYS', 90),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Project Folders
+    |--------------------------------------------------------------------------
+    |
+    | "Ordner anlegen" on a project page creates <customer>/<project> below
+    | this root, from the queue worker (App\Jobs\CreateProjectDirectory). The
+    | name is built from the two slugs only -- no administrator ever types a
+    | path. The root itself must already exist and be writable by the worker;
+    | it is never created, and nothing outside it is ever touched. No elevated
+    | rights are involved: see docs/adr/0002-project-directories.md.
+    |
+    | Inside a PREVIEW_ALLOWED_ROOTS entry, a created folder is offered as the
+    | target of the project's next static-directory preview.
+    |
+    */
+
+    'project_directories' => [
+        'root' => env('PROJECT_DIRECTORY_ROOT') ?: storage_path('app/previews'),
+    ],
+
 ];

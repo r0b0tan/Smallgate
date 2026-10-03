@@ -136,6 +136,7 @@ Umgesetzt ist stattdessen:
 - Die Vorschau-Auslieferung ist eine eigene Projektphase mit eigenem
   Sicherheitsreview.
 - Bis dahin gibt es keinen Weg, über Smallgate Serverzustand zu verändern.
+  Einzige Ausnahme: das Anlegen von Projektordnern, siehe ADR 0002.
 - `SESSION_DOMAIN` bleibt leer. Wird diese Entscheidung später revidiert, ist
   das ein sicherheitsrelevanter Eingriff und keine Konfigurationskleinigkeit.
 - Die Datenbank hält Hostname und Ziel bereits vor, sodass die spätere Phase

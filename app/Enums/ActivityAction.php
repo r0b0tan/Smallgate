@@ -28,6 +28,8 @@ enum ActivityAction: string
 
     case ProjectCreated = 'project_created';
     case ProjectUpdated = 'project_updated';
+    case ProjectDirectoryCreated = 'project_directory_created';
+    case ProjectDirectoryFailed = 'project_directory_failed';
 
     case PreviewCreated = 'preview_created';
     case PreviewUpdated = 'preview_updated';
@@ -61,6 +63,8 @@ enum ActivityAction: string
             self::CustomerDeactivated => 'Kunde deaktiviert',
             self::ProjectCreated => 'Projekt angelegt',
             self::ProjectUpdated => 'Projekt geändert',
+            self::ProjectDirectoryCreated => 'Projektordner angelegt',
+            self::ProjectDirectoryFailed => 'Projektordner fehlgeschlagen',
             self::PreviewCreated => 'Vorschau angelegt',
             self::PreviewUpdated => 'Vorschau geändert',
             self::PreviewDeleted => 'Vorschau gelöscht',
@@ -84,7 +88,8 @@ enum ActivityAction: string
             self::InvitationSent, self::InvitationResent, self::InvitationRevoked, self::InvitationAccepted,
             self::UserBlocked, self::UserUnblocked, self::CustomerCreated, self::CustomerUpdated,
             self::CustomerActivated, self::CustomerDeactivated => 'customers',
-            self::ProjectCreated, self::ProjectUpdated, self::PreviewCreated, self::PreviewUpdated,
+            self::ProjectCreated, self::ProjectUpdated, self::ProjectDirectoryCreated,
+            self::ProjectDirectoryFailed, self::PreviewCreated, self::PreviewUpdated,
             self::PreviewDeleted, self::PreviewProvisioned, self::PreviewProvisionFailed,
             self::PreviewDisabled => 'projects',
             self::FeedbackApproved, self::FeedbackChangesRequested => 'feedback',
@@ -120,7 +125,8 @@ enum ActivityAction: string
     public function isWarning(): bool
     {
         return in_array($this, [
-            self::LoginFailed, self::PreviewProvisionFailed, self::UserBlocked, self::CustomerDeactivated,
+            self::LoginFailed, self::PreviewProvisionFailed, self::ProjectDirectoryFailed, self::UserBlocked,
+            self::CustomerDeactivated,
         ], true);
     }
 }

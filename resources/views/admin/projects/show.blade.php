@@ -35,6 +35,7 @@
                     <dt class="sg-muted">Kürzel</dt>
                     <dd class="font-mono text-xs text-ink">{{ $project->slug }}</dd>
                 </div>
+                @include('admin.projects._directory')
             </dl>
         </div>
     </div>

@@ -131,6 +131,8 @@ Route::middleware(['auth', 'admin'])
         Route::get('projekte/{project}', [Admin\ProjectController::class, 'show'])->name('projects.show');
         Route::get('projekte/{project}/bearbeiten', [Admin\ProjectController::class, 'edit'])->name('projects.edit');
         Route::patch('projekte/{project}', [Admin\ProjectController::class, 'update'])->name('projects.update');
+        Route::post('projekte/{project}/ordner', [Admin\ProjectDirectoryController::class, 'store'])
+            ->name('projects.directory.store');
 
         // No separate preview index: previews are managed on the project page,
         // which is the only place they exist as far as the administrator is

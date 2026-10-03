@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Contracts\PreviewProvisioner;
 use App\Enums\ActivityAction;
+use App\Enums\DirectoryStatus;
 use App\Enums\PreviewStatus;
 use App\Enums\PreviewTargetType;
 use App\Enums\ThumbnailStatus;
@@ -14,6 +15,7 @@ use App\Jobs\GeneratePreviewThumbnail;
 use App\Models\Activity;
 use App\Models\Preview;
 use App\Models\Project;
+use App\Services\Previews\PreviewTargetGuard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -30,13 +32,21 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class PreviewController extends Controller
 {
-    public function create(Project $project): View
+    public function create(Project $project, PreviewTargetGuard $guard): View
     {
         $this->authorize('managePreviews', $project);
 
+        // A created project folder is the obvious target -- but only offered
+        // when the same guard that checks the form would accept it.
+        $folder = $project->directory_status === DirectoryStatus::Created ? $project->directoryPath() : null;
+        $offerFolder = $folder !== null && $guard->isAllowed(PreviewTargetType::StaticDirectory, $folder);
+
         return view('admin.previews.create', [
             'project' => $project,
-            'preview' => new Preview([
+            'preview' => new Preview($offerFolder ? [
+                'target_type' => PreviewTargetType::StaticDirectory->value,
+                'target' => $folder,
+            ] : [
                 'target_type' => (PreviewTargetType::enabled()[0] ?? null)?->value,
             ]),
             'targetTypes' => PreviewTargetType::options(),

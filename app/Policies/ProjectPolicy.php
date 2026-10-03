@@ -55,4 +55,12 @@ class ProjectPolicy
     {
         return $user->isAdmin();
     }
+
+    /**
+     * Creating the project's folder on the server.
+     */
+    public function createDirectory(User $user, Project $project): bool
+    {
+        return $user->isAdmin();
+    }
 }

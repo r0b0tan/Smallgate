@@ -219,6 +219,11 @@
         @apply rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-inset ring-amber-200;
     }
 
+    /* A bar for work whose duration is unknown, e.g. a queued job. */
+    .sg-progress-indeterminate {
+        animation: sg-progress 1.4s ease-in-out infinite;
+    }
+
     .sg-eyebrow {
         @apply text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted;
     }
@@ -330,10 +335,25 @@
     }
 }
 
+@keyframes sg-progress {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(300%);
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     @keyframes sg-toast-in {
         from {
             opacity: 0;
         }
+    }
+
+    .sg-progress-indeterminate {
+        animation: none;
+        width: 100%;
+        opacity: 0.5;
     }
 }

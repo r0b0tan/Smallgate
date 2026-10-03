@@ -71,3 +71,53 @@ document.querySelectorAll('[data-rail-toggle]').forEach((button) => {
     button.hidden = false;
     button.addEventListener('click', () => render(shell.dataset.rail !== 'open'));
 });
+
+/**
+ * Progress of background work, e.g. a project folder being created by the
+ * queue worker. An element with an id and data-poll is refreshed from a fresh
+ * copy of the same page until the server renders it without data-poll. The
+ * page itself is the source -- there is no status API. After a while it gives
+ * up and reveals [data-poll-stalled], since a stopped worker never finishes.
+ */
+document.querySelectorAll('[data-poll][id]').forEach((region) => {
+    const interval = 1500;
+    const maxAttempts = 40;
+    let attempts = 0;
+
+    const poll = async () => {
+        attempts += 1;
+
+        try {
+            const response = await fetch(location.href, {
+                headers: { Accept: 'text/html' },
+                credentials: 'same-origin',
+                cache: 'no-store',
+            });
+
+            if (response.ok) {
+                const html = await response.text();
+                const fresh = new DOMParser().parseFromString(html, 'text/html').getElementById(region.id);
+
+                if (fresh) {
+                    region.innerHTML = fresh.innerHTML;
+
+                    if (!fresh.hasAttribute('data-poll')) {
+                        region.removeAttribute('data-poll');
+
+                        return;
+                    }
+                }
+            }
+        } catch {
+            // A dropped request is no answer; the next attempt asks again.
+        }
+
+        if (attempts < maxAttempts) {
+            setTimeout(poll, interval);
+        } else {
+            region.querySelector('[data-poll-stalled]')?.removeAttribute('hidden');
+        }
+    };
+
+    setTimeout(poll, interval);
+});

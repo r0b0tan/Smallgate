@@ -51,7 +51,8 @@ oder `artisan` direkt auf dem Host aufrufen. Immer `./sg`:
 - `role`, `customer_id`, `is_active`, `project_id`, `provisioned_at` sind
   **nie** `$fillable`. Immer explizit in Admin-Code zuweisen. Ebenso
   `previews.version`, die `thumbnail_*`-Spalten, die `logo_*`-Spalten von
-  `branding` und bei Rückmeldungen `preview_id`, `user_id`, `preview_version`.
+  `branding`, die `directory*`-Spalten von `projects` und bei Rückmeldungen
+  `preview_id`, `user_id`, `preview_version`.
 - Fremde oder unbekannte IDs → **404**, niemals 403. Ein 403 bestätigt die
   Existenz der Ressource.
 - Sichtbarkeitsprüfungen laufen über `Project::visibleTo()` bzw.
@@ -72,6 +73,10 @@ oder `artisan` direkt auf dem Host aufrufen. Immer `./sg`:
   `PreviewScreenshotter` oder dem Skript brauchen begleitende Tests.
 - Vorschaubilder liegen auf der privaten Disk und werden nur über autorisierte
   Routen ausgeliefert – Kunden nur das Bild der aktuellen Version.
+- Projektordner („Ordner anlegen“) nur über `CreateProjectDirectory` im
+  Queue-Worker: Name nur aus den Kürzeln, nur anlegen, nur unterhalb von
+  `PROJECT_DIRECTORY_ROOT`, keine Symlinks, keine erhöhten Rechte. Siehe
+  ADR 0002. Änderungen daran brauchen begleitende Tests.
 - Logos im Erscheinungsbild: nur PNG/WebP, nie SVG. Auslieferung nur über
   `BrandingAssetController` mit gespeichertem MIME-Typ, `nosniff` und
   Sandbox-CSP. Farben gelangen nur als validierter Hex-Wert ins Stylesheet.
@@ -79,7 +84,8 @@ oder `artisan` direkt auf dem Host aufrufen. Immer `./sg`:
 ## Preview-Provisioning
 
 Der `NullPreviewProvisioner` ist die einzige Implementierung. Er darf **keine**
-Dateien außerhalb des Projektverzeichnisses verändern und **keine** Kommandos
+Dateien außerhalb des Projektverzeichnisses verändern (die einzige Ausnahme in
+Smallgate sind Projektordner, ADR 0002, und die gehören nicht hierher) und **keine** Kommandos
 mit erhöhten Rechten ausführen. Die echte Subdomain-Auslieferung ist eine eigene
 Phase – die Architekturentscheidung ist bewusst noch offen, siehe
 `docs/adr/0001-preview-subdomain-architecture.md`.
