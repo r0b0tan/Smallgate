@@ -1,11 +1,10 @@
 @props(['mark' => true, 'wordmark' => true])
 
-{{-- The portal's mark: the stylised "S", optionally followed by the name.
-     Inline, nothing fetched. Source files in design/logo/. --}}
+{{-- The portal's mark, optionally followed by the name. Both come from the
+     administration's "Erscheinungsbild", with the built-in look as fallback. --}}
 @php
-    $name = (string) config('app.name');
-    // The product name is set in two weights; any other name stays as it is.
-    $split = strcasecmp($name, 'Smallgate') === 0;
+    $branding = \App\Models\Branding::current();
+    $parts = $branding->nameParts();
 @endphp
 
 <span {{ $attributes->merge(['class' => 'inline-flex items-center gap-3']) }}>
@@ -15,10 +14,10 @@
 
     @if ($wordmark)
         <span class="text-lg uppercase tracking-[0.06em] text-ink">
-            @if ($split)
-                <span class="font-bold">Small</span><span class="font-normal text-ink-muted">gate</span>
+            @if ($parts)
+                <span class="font-bold">{{ $parts[0] }}</span><span class="font-normal text-ink-muted">{{ $parts[1] }}</span>
             @else
-                <span class="font-bold">{{ $name }}</span>
+                <span class="font-bold">{{ $branding->displayName() }}</span>
             @endif
         </span>
     @endif

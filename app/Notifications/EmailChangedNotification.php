@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\Branding;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -37,12 +38,12 @@ class EmailChangedNotification extends Notification implements ShouldBeEncrypted
         $contact = (string) config('smallgate.contact_email');
 
         return (new MailMessage)
-            ->subject('E-Mail-Adresse geändert – '.config('app.name'))
+            ->subject('E-Mail-Adresse geändert – '.Branding::current()->displayName())
             ->greeting('Hallo '.$this->name.',')
             ->line('die E-Mail-Adresse Ihres Zugangs zum Kundenportal wurde soeben geändert. An diese Adresse schickt das Portal ab jetzt keine Nachrichten mehr.')
             ->line($contact !== ''
                 ? "Haben Sie das nicht selbst getan, melden Sie sich bitte umgehend unter {$contact}."
                 : 'Haben Sie das nicht selbst getan, melden Sie sich bitte umgehend bei Ihrem Ansprechpartner.')
-            ->salutation('Viele Grüße'."\n".config('app.name'));
+            ->salutation('Viele Grüße'."\n".Branding::current()->displayName());
     }
 }

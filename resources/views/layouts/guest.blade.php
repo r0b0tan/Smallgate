@@ -7,7 +7,7 @@
     <div class="flex min-h-full flex-col">
         <header class="border-b border-line bg-white/80">
             <div class="mx-auto flex h-16 max-w-6xl items-center px-4 sm:px-6">
-                <a href="{{ route('home') }}" aria-label="{{ config('app.name') }} – zur Startseite">
+                <a href="{{ route('home') }}" aria-label="{{ \App\Models\Branding::current()->displayName() }} – zur Startseite">
                     <x-logo />
                 </a>
             </div>

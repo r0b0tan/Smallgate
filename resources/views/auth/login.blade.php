@@ -6,6 +6,8 @@
      brand panel on the left carries the logo, the form sits on the right. --}}
 @php
     $contactEmail = (string) config('smallgate.contact_email');
+    $branding = \App\Models\Branding::current();
+    $parts = $branding->nameParts();
 @endphp
 
 @section('body')
@@ -13,10 +15,14 @@
         <main class="w-full max-w-3xl">
             <div class="sg-login-card md:grid md:grid-cols-[39fr_61fr]">
                 <div class="sg-login-panel relative overflow-hidden px-6 py-8 text-white sm:px-14 sm:py-10 md:pt-14 md:pb-48">
-                    <x-logo-mark class="h-14 w-auto text-sky" />
+                    <x-logo-mark on="dark" class="h-14 w-auto text-sky" />
 
-                    <p class="mt-4 text-[2.125rem] leading-none uppercase tracking-[0.01em]">
-                        <span class="font-semibold text-white">Small</span><span class="font-semibold text-slate-accent">gate</span>
+                    <p class="mt-4 text-[2.125rem] leading-none uppercase tracking-[0.01em] break-words">
+                        @if ($parts)
+                            <span class="font-semibold text-white">{{ $parts[0] }}</span><span class="font-semibold text-slate-accent">{{ $parts[1] }}</span>
+                        @else
+                            <span class="font-semibold text-white">{{ $branding->displayName() }}</span>
+                        @endif
                     </p>
 
                     <p class="mt-6 text-[1.3125rem] leading-snug text-slate-text">
@@ -24,7 +30,10 @@
                         Rückmeldung geben.
                     </p>
 
-                    <x-brand-watermark class="pointer-events-none absolute bottom-0 left-0 hidden w-full md:block" />
+                    {{-- The watermark is the built-in "S"; it stays away from a customer's own logo. --}}
+                    @unless ($branding->hasAnyLogo())
+                        <x-brand-watermark class="pointer-events-none absolute bottom-0 left-0 hidden w-full md:block" />
+                    @endunless
                 </div>
 
                 <div class="px-6 py-10 sm:px-16 sm:pt-14 sm:pb-11">

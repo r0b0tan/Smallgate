@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\Branding;
 use App\Models\Invitation;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -31,16 +32,17 @@ class InvitationNotification extends Notification
     {
         $url = route('invitations.show', ['token' => $this->token]);
         $hours = (int) config('smallgate.invitations.ttl_hours', 72);
-        $customer = $notifiable->customer?->name ?? config('app.name');
+        $portal = Branding::current()->displayName();
+        $customer = $notifiable->customer?->name ?? $portal;
 
         return (new MailMessage)
-            ->subject('Ihr Zugang zum Kundenportal von '.config('app.name'))
+            ->subject('Ihr Zugang zum Kundenportal von '.$portal)
             ->greeting('Hallo '.$notifiable->name.',')
             ->line("Sie wurden für den Bereich \"{$customer}\" zum Kundenportal eingeladen.")
             ->line('Über den folgenden Link vergeben Sie Ihr eigenes Passwort und schließen die Einrichtung ab.')
             ->action('Zugang einrichten', $url)
             ->line("Der Link ist {$hours} Stunden gültig und kann nur einmal verwendet werden.")
             ->line('Wenn Sie diese Einladung nicht erwartet haben, ignorieren Sie diese E-Mail bitte einfach.')
-            ->salutation('Viele Grüße'."\n".config('app.name'));
+            ->salutation('Viele Grüße'."\n".$portal);
     }
 }

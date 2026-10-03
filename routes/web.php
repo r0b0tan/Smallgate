@@ -2,10 +2,16 @@
 
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth;
+use App\Http\Controllers\BrandingAssetController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\Portal;
 use App\Http\Controllers\ProfileController;
+use App\Http\Middleware\EnsureAccountIsActive;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Session\Middleware\AuthenticateSession;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,6 +35,22 @@ Route::get('/', function () {
 
 Route::get('/impressum', [LegalController::class, 'imprint'])->name('legal.imprint');
 Route::get('/datenschutz', [LegalController::class, 'privacy'])->name('legal.privacy');
+
+// Colours and logos, loaded by every page. Without a session: the browser
+// fetches them after the page, and a session would record them as the
+// "previous URL" a failed form submission is sent back to.
+Route::withoutMiddleware([
+    StartSession::class,
+    ShareErrorsFromSession::class,
+    PreventRequestForgery::class,
+    AuthenticateSession::class,
+    EnsureAccountIsActive::class,
+])->group(function () {
+    Route::get('/erscheinungsbild.css', [BrandingAssetController::class, 'stylesheet'])->name('branding.stylesheet');
+    Route::get('/erscheinungsbild/logo/{variant}/{version}', [BrandingAssetController::class, 'logo'])
+        ->where(['variant' => 'hell|dunkel', 'version' => '[0-9a-f]{16}'])
+        ->name('branding.logo');
+});
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [Auth\AuthenticatedSessionController::class, 'create'])->name('login');
@@ -134,6 +156,9 @@ Route::middleware(['auth', 'admin'])
             ->name('projects.previews.thumbnail.regenerate');
 
         Route::get('protokoll', [Admin\ActivityController::class, 'index'])->name('activities.index');
+
+        Route::get('erscheinungsbild', [Admin\BrandingController::class, 'edit'])->name('branding.edit');
+        Route::patch('erscheinungsbild', [Admin\BrandingController::class, 'update'])->name('branding.update');
     });
 
 /*

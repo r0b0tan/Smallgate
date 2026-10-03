@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\Branding;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -43,12 +44,12 @@ class ResetPasswordNotification extends Notification implements ShouldBeEncrypte
         $minutes = config('auth.passwords.'.config('auth.defaults.passwords').'.expire');
 
         return (new MailMessage)
-            ->subject('Passwort zurücksetzen – '.config('app.name'))
+            ->subject('Passwort zurücksetzen – '.Branding::current()->displayName())
             ->greeting('Hallo '.$notifiable->name.',')
             ->line('für Ihren Zugang zum Kundenportal wurde ein neues Passwort angefordert.')
             ->action('Passwort zurücksetzen', $url)
             ->line("Der Link ist {$minutes} Minuten gültig.")
             ->line('Haben Sie das nicht angefordert, ist keine weitere Aktion nötig – Ihr Passwort bleibt unverändert.')
-            ->salutation('Viele Grüße'."\n".config('app.name'));
+            ->salutation('Viele Grüße'."\n".Branding::current()->displayName());
     }
 }

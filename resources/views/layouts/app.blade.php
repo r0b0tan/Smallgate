@@ -5,6 +5,7 @@
 
 @php
     $user = auth()->user();
+    $branding = \App\Models\Branding::current();
 
     $words = preg_split('/\s+/', trim((string) $user?->name), -1, PREG_SPLIT_NO_EMPTY) ?: ['?'];
     $initials = mb_strtoupper(mb_substr($words[0], 0, 1).(count($words) > 1 ? mb_substr(end($words), 0, 1) : ''));
@@ -21,6 +22,7 @@
             ['label' => 'Kunden', 'icon' => 'users', 'url' => route('admin.customers.index'), 'active' => 'admin.customers.*'],
             ['label' => 'Projekte', 'icon' => 'list', 'url' => route('admin.projects.index'), 'active' => 'admin.projects.*'],
             ['label' => 'Protokoll', 'icon' => 'clock', 'url' => route('admin.activities.index'), 'active' => 'admin.activities.*'],
+            ['label' => 'Erscheinungsbild', 'icon' => 'palette', 'url' => route('admin.branding.edit'), 'active' => 'admin.branding.*'],
             ['label' => 'Ihre Zugangsdaten', 'icon' => 'user', 'url' => route('profile.edit'), 'active' => 'profile.*'],
         ]
         : [
@@ -42,7 +44,7 @@
         <aside class="fixed inset-y-0 left-0 z-30 hidden w-16 flex-col bg-rail px-2.75 py-4 transition-[width] duration-200
                       ease-out motion-reduce:transition-none md:flex rail-open:w-56">
             <a href="{{ route('home') }}" class="flex size-10.5 items-center justify-center"
-               aria-label="{{ config('app.name') }} – zur Startseite">
+               aria-label="{{ $branding->displayName() }} – zur Startseite">
                 <x-logo :wordmark="false" />
             </a>
 
@@ -92,7 +94,7 @@
 
         <header class="sticky top-0 z-20 shrink-0 border-b border-line bg-paper/90 backdrop-blur-md">
             <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
-                <a href="{{ route('home') }}" aria-label="{{ config('app.name') }} – zur Startseite">
+                <a href="{{ route('home') }}" aria-label="{{ $branding->displayName() }} – zur Startseite">
                     {{-- The rail carries the mark on wider screens. --}}
                     <span class="md:hidden"><x-logo /></span>
                     <span class="hidden md:inline"><x-logo :mark="false" /></span>
@@ -159,7 +161,7 @@
         <footer class="mx-4 mt-10 flex flex-wrap justify-between gap-4 border-t border-line pb-28 pt-6 text-sm sg-muted sm:mx-6
                        md:mx-0 md:mt-0 md:h-7 md:shrink-0 md:flex-nowrap md:items-center md:bg-paper md:px-6 md:py-0
                        md:text-xs lg:px-10">
-            <span>&copy; {{ date('Y') }} CLICKIT DIGITAL</span>
+            <span>&copy; {{ date('Y') }} {{ $branding->copyrightHolder() }}</span>
             <span class="flex gap-6">
                 <a class="hover:text-ink hover:underline" href="{{ route('legal.imprint') }}">Impressum</a>
                 <a class="hover:text-ink hover:underline" href="{{ route('legal.privacy') }}">Datenschutz</a>

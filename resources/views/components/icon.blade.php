@@ -28,6 +28,7 @@
         'chevron-down' => '<path d="M6 9l6 6 6-6"/>',
         'chevron-right' => '<path d="M9 6l6 6-6 6"/>',
         'x' => '<path d="M6 6l12 12M18 6L6 18"/>',
+        'palette' => '<path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.8-.8 1.8-1.8 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4c0-4.4-4-8-9-8z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10.5" cy="7.2" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/>',
         'file' => '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/>',
         'check-circle' => '<circle cx="12" cy="12" r="10" fill="currentColor" stroke="none"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2"/>',
         'edit-circle' => '<circle cx="12" cy="12" r="10" fill="currentColor" stroke="none"/><path d="M8 16h2.2l5.6-5.6-2.2-2.2L8 13.8V16z" stroke="#fff" stroke-width="1.6"/>',

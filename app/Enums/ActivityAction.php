@@ -39,6 +39,8 @@ enum ActivityAction: string
     case FeedbackApproved = 'feedback_approved';
     case FeedbackChangesRequested = 'feedback_changes_requested';
 
+    case BrandingUpdated = 'branding_updated';
+
     public function label(): string
     {
         return match ($this) {
@@ -67,6 +69,7 @@ enum ActivityAction: string
             self::PreviewDisabled => 'Vorschau deaktiviert',
             self::FeedbackApproved => 'Entwurf freigegeben',
             self::FeedbackChangesRequested => 'Änderung gewünscht',
+            self::BrandingUpdated => 'Erscheinungsbild geändert',
         };
     }
 
@@ -85,6 +88,7 @@ enum ActivityAction: string
             self::PreviewDeleted, self::PreviewProvisioned, self::PreviewProvisionFailed,
             self::PreviewDisabled => 'projects',
             self::FeedbackApproved, self::FeedbackChangesRequested => 'feedback',
+            self::BrandingUpdated => 'settings',
         };
     }
 
@@ -98,6 +102,7 @@ enum ActivityAction: string
             'customers' => 'Kunden und Zugänge',
             'projects' => 'Projekte und Vorschauen',
             'feedback' => 'Rückmeldungen',
+            'settings' => 'Einstellungen',
         ];
     }
 

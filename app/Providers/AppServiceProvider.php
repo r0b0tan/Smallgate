@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\PreviewProvisioner;
+use App\Models\Branding;
 use App\Models\Customer;
 use App\Models\Invitation;
 use App\Models\Preview;
@@ -32,6 +33,10 @@ class AppServiceProvider extends ServiceProvider
                 ),
             };
         });
+
+        // Read once per request, and afresh for every queued job: a worker
+        // runs for days, and a mail must carry the name set today.
+        $this->app->scoped(Branding::class, fn () => Branding::fromDatabase());
     }
 
     public function boot(): void

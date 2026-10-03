@@ -13,6 +13,11 @@
  * administration alike. Many customers are not technical, some read on an
  * older phone in daylight. Every text colour below clears WCAG AA on white
  * and on the paper ground.
+ *
+ * The brand and accent colours, their shades and the sign-in colours derived
+ * from them can be overridden under "Erscheinungsbild" in the administration:
+ * /erscheinungsbild.css is loaded after this file (Branding::stylesheet()).
+ * The values here are the built-in look.
  */
 @theme {
     --font-sans: 'Source Sans 3 Variable', ui-sans-serif, system-ui, sans-serif;
@@ -36,6 +41,8 @@
     /* Sign-in page: a slate panel next to the form, on a cool blue-grey ground. */
     --color-ground: #dee5ee;
     --color-slate: #364759;
+    --color-slate-light: #43566a; /* the panel's gradient ends */
+    --color-slate-deep: #2c3a49;
     --color-slate-text: #dce4ed;  /* ~9:1 on the slate */
     --color-slate-accent: #b4c3d3;
     --color-sky: #84b6e3;
@@ -231,7 +238,7 @@
     }
 
     .sg-login-panel {
-        background: linear-gradient(170deg, #43566a 0%, var(--color-slate) 50%, #2c3a49 100%);
+        background: linear-gradient(170deg, var(--color-slate-light) 0%, var(--color-slate) 50%, var(--color-slate-deep) 100%);
     }
 
     .sg-login-label {
