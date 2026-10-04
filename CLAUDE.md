@@ -11,7 +11,9 @@ E-Mail. Features außerhalb des MVP nicht hinzufügen.
 ## Stack
 
 - Laravel 13, PHP 8.4, PostgreSQL 17
-- Blade + Tailwind CSS 4, minimal JavaScript (nur Schließen des Konto-Menüs)
+- Blade + Tailwind CSS 4, minimal JavaScript ohne Framework
+  (`resources/js/app.js`: Konto-Menü, Passwort-Anzeige, Navigationsleiste,
+  Fortschrittsanzeige). Alles bleibt ohne JavaScript bedienbar.
 - Pest 5 / PHPUnit 13, Tests gegen echtes PostgreSQL (nicht SQLite)
 - Docker Compose, Mailpit. Produktion: `compose.prod.yaml` (Dockerfile-Stages
   `prod` und `web`), nie zusammen mit `compose.yaml`
@@ -124,8 +126,9 @@ oder `artisan` direkt auf dem Host aufrufen. Immer `./sg`:
 ## Preview-Provisioning
 
 Der `NullPreviewProvisioner` ist die einzige Implementierung. Er darf **keine**
-Dateien außerhalb des Projektverzeichnisses verändern (die einzige Ausnahme in
-Smallgate sind Projektordner, ADR 0002, und die gehören nicht hierher) und **keine** Kommandos
+Dateien außerhalb des Projektverzeichnisses verändern (die Ausnahmen in
+Smallgate sind Projektordner, ADR 0002, und hochgeladene Entwürfe, ADR 0004 –
+beide gehören nicht hierher) und **keine** Kommandos
 mit erhöhten Rechten ausführen. Für die Auslieferung braucht er auch nichts
 davon: Statische Vorschauen liefert Smallgate selbst aus, sobald sie verfügbar
 sind, siehe `docs/adr/0003-preview-delivery.md`. ADR 0001 hält die verworfenen
