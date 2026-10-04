@@ -46,14 +46,19 @@ server {
     access_log /var/log/nginx/access.log smallgate;
 
     # The CSP is deliberately strict: Smallgate loads no third-party scripts,
-    # fonts or analytics of any kind. HSTS only takes effect over https, which
+    # fonts or analytics of any kind.
+    #
+    # form-action also names the preview hosts: browsers apply it to the
+    # redirects after a form, and signing in from a preview link ends there
+    # (login, then the portal's handoff, then the preview host -- ADR 0003).
+    # Without a PREVIEW_BASE_DOMAIN the extra source is invalid and ignored. HSTS only takes effect over https, which
     # is how browsers reach this server through the proxy.
     add_header Strict-Transport-Security "max-age=31536000" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-Frame-Options "DENY" always;
     add_header Referrer-Policy "same-origin" always;
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://*.${PREVIEW_BASE_DOMAIN}" always;
 
     location / {
         try_files $uri $uri/ /index.php?$query_string;

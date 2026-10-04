@@ -88,7 +88,7 @@
                                     <p class="truncate text-sm">{{ $invitation->email }}</p>
                                     <p class="truncate text-xs sg-faint">
                                         {{ $invitation->statusLabel() }} ·
-                                        gültig bis {{ $invitation->expires_at->format('d.m.Y H:i') }}
+                                        gültig bis {{ $invitation->expires_at->timezone(config('smallgate.display_timezone'))->format('d.m.Y H:i') }}
                                     </p>
                                 </div>
 

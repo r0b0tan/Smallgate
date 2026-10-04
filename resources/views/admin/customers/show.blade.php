@@ -34,7 +34,7 @@
                 </div>
                 <div>
                     <dt class="sg-muted">Angelegt</dt>
-                    <dd class="text-ink">{{ $customer->created_at->format('d.m.Y') }}</dd>
+                    <dd class="text-ink">{{ $customer->created_at->timezone(config('smallgate.display_timezone'))->format('d.m.Y') }}</dd>
                 </div>
             </dl>
         </div>

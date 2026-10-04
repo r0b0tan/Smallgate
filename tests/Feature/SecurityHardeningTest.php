@@ -167,6 +167,16 @@ it('hands every request on a preview host to the application, GET and HEAD only'
         ->toContain('PREVIEW_BASE_DOMAIN: ${PREVIEW_BASE_DOMAIN:-}');
 });
 
+it('lets a sign-in from a preview link end on the preview host', function () {
+    // Browsers apply form-action to the redirects after a form: login, the
+    // portal's handoff, then the preview host. Found with a real browser --
+    // with 'self' alone the last redirect is aborted.
+    expect(file_get_contents(base_path('docker/nginx/prod.conf.template')))
+        ->toContain("form-action 'self' https://*.\${PREVIEW_BASE_DOMAIN}\"")
+        ->and(file_get_contents(base_path('docker/nginx/default.conf')))
+        ->toContain("form-action 'self' https://*.preview.localhost\"");
+});
+
 it('publishes the development ports on loopback only', function () {
     preg_match_all('/^\s+- "([^"]+):\d+"$/m', file_get_contents(base_path('compose.yaml')), $ports);
 

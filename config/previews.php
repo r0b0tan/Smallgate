@@ -61,6 +61,9 @@ return [
         'max_depth' => 20,
         'max_path_length' => 255,
         'keep' => 3,
+        // Where the ZIP waits for the worker. Private: never served.
+        'disk' => 'local',
+        'directory' => 'preview-uploads',
     ],
 
     /*

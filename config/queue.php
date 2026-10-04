@@ -40,7 +40,12 @@ return [
             'connection' => env('DB_QUEUE_CONNECTION'),
             'table' => env('DB_QUEUE_TABLE', 'jobs'),
             'queue' => env('DB_QUEUE', 'default'),
-            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 90),
+            // A job still running after this many seconds is handed to a
+            // second worker as well, which -- with tries = 1 -- marks it failed
+            // while the first is still at work. So it stays above every
+            // timeout: the worker's --timeout (120) and each job's own.
+            // QueueTimeoutTest holds the line.
+            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 150),
             'after_commit' => false,
         ],
 

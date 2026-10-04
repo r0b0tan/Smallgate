@@ -34,6 +34,47 @@ class PreviewUpload extends Model
     }
 
     /**
+     * The folder this upload is unpacked into, or null while the project has
+     * no folder.
+     */
+    public function directory(): ?string
+    {
+        $parent = $this->preview?->uploadsDirectory();
+
+        return $parent === null ? null : $parent.'/'.$this->id;
+    }
+
+    /**
+     * Where it is unpacked first. Hidden, so the preview host never serves a
+     * half-written draft; renamed into directory() once complete.
+     */
+    public function stagingDirectory(): ?string
+    {
+        $parent = $this->preview?->uploadsDirectory();
+
+        return $parent === null ? null : self::stagingDirectoryIn($parent, $this->id);
+    }
+
+    public static function stagingDirectoryIn(string $parent, string $uploadId): string
+    {
+        return $parent.'/.eingang-'.$uploadId;
+    }
+
+    /**
+     * The uploaded ZIP on config('previews.uploads.disk'), until it is
+     * unpacked or rejected.
+     */
+    public function archivePath(): string
+    {
+        return self::archivePathFor($this->id);
+    }
+
+    public static function archivePathFor(string $uploadId): string
+    {
+        return config('previews.uploads.directory').'/'.$uploadId.'.zip';
+    }
+
+    /**
      * @return BelongsTo<Preview, $this>
      */
     public function preview(): BelongsTo

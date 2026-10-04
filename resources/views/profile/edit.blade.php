@@ -42,7 +42,7 @@
                 <div class="flex justify-between">
                     <dt class="sg-muted">Letzte Anmeldung</dt>
                     <dd class="sg-value">
-                        {{ $user->last_login_at?->format('d.m.Y H:i') ?? '–' }}
+                        {{ $user->last_login_at?->timezone(config('smallgate.display_timezone'))->format('d.m.Y H:i') ?? '–' }}
                     </dd>
                 </div>
             </dl>

@@ -53,7 +53,7 @@ oder `artisan` direkt auf dem Host aufrufen. Immer `./sg`:
   `previews.version`, die `thumbnail_*`-Spalten, die `logo_*`-Spalten von
   `branding`, die `directory*`-Spalten von `projects`, bei Rückmeldungen
   `preview_id`, `user_id`, `preview_version` und sämtliche Spalten von
-  `preview_handoffs` und `preview_sessions`.
+  `preview_handoffs`, `preview_sessions` und `preview_uploads`.
 - Fremde oder unbekannte IDs → **404**, niemals 403. Ein 403 bestätigt die
   Existenz der Ressource.
 - Sichtbarkeitsprüfungen laufen über `Project::visibleTo()` bzw.
@@ -102,6 +102,21 @@ oder `artisan` direkt auf dem Host aufrufen. Immer `./sg`:
   - Änderungen an `PreviewAccess`, `PreviewHostController`,
     `PreviewFileResolver`, `routes/preview.php` oder den Preview-Blöcken der
     nginx-Konfiguration brauchen begleitende Tests.
+- Hochgeladene Entwürfe (ADR 0004):
+  - Entpacken nur über `PreviewArchiveExtractor` im Queue-Worker
+    (`ExtractPreviewUpload`), nie im Request und nie mit
+    `ZipArchive::extractTo()`. Ein unsicherer Eintrag lehnt das ganze Archiv
+    ab, nichts wird stillschweigend repariert.
+  - Größen beim Schreiben zählen, nie den Angaben im Archiv trauen.
+  - Erst in den versteckten Arbeitsordner, dann per `rename` an seinen Platz,
+    dann das Ziel der Vorschau umstellen.
+  - Pfade nur aus IDs berechnen, nie speichern und nie aus dem Archiv
+    übernehmen. Den Namen des ZIPs weder speichern noch loggen.
+  - Löschen nur über `DirectoryRemover` und nur Ordner aus `preview_uploads`,
+    nie das aktuelle Ziel, nie von Hand angelegte Ordner.
+  - Nur die Upload-Route darf große Requests annehmen (eigener nginx-Block).
+  - Änderungen an Entpacker, Jobs, `DirectoryRemover` oder
+    `PreviewUploadPruner` brauchen begleitende Tests.
 - Logos im Erscheinungsbild: nur PNG/WebP, nie SVG. Auslieferung nur über
   `BrandingAssetController` mit gespeichertem MIME-Typ, `nosniff` und
   Sandbox-CSP. Farben gelangen nur als validierter Hex-Wert ins Stylesheet.
@@ -114,8 +129,8 @@ Smallgate sind Projektordner, ADR 0002, und die gehören nicht hierher) und **ke
 mit erhöhten Rechten ausführen. Für die Auslieferung braucht er auch nichts
 davon: Statische Vorschauen liefert Smallgate selbst aus, sobald sie verfügbar
 sind, siehe `docs/adr/0003-preview-delivery.md`. ADR 0001 hält die verworfenen
-Optionen fest. Hochladen von Entwürfen ist nicht entschieden und bekommt eine
-eigene ADR.
+Optionen fest. Entwürfe lassen sich als ZIP hochladen, siehe
+`docs/adr/0004-preview-uploads.md`.
 
 ## Kundenzuordnung
 

@@ -37,6 +37,9 @@ enum ActivityAction: string
     case PreviewProvisioned = 'preview_provisioned';
     case PreviewProvisionFailed = 'preview_provision_failed';
     case PreviewDisabled = 'preview_disabled';
+    case PreviewUploadStarted = 'preview_upload_started';
+    case PreviewUploaded = 'preview_uploaded';
+    case PreviewUploadFailed = 'preview_upload_failed';
 
     case FeedbackApproved = 'feedback_approved';
     case FeedbackChangesRequested = 'feedback_changes_requested';
@@ -71,6 +74,9 @@ enum ActivityAction: string
             self::PreviewProvisioned => 'Vorschau bereitgestellt',
             self::PreviewProvisionFailed => 'Bereitstellung fehlgeschlagen',
             self::PreviewDisabled => 'Vorschau deaktiviert',
+            self::PreviewUploadStarted => 'Entwurf hochgeladen',
+            self::PreviewUploaded => 'Entwurf entpackt',
+            self::PreviewUploadFailed => 'Entwurf abgelehnt',
             self::FeedbackApproved => 'Entwurf freigegeben',
             self::FeedbackChangesRequested => 'Änderung gewünscht',
             self::BrandingUpdated => 'Erscheinungsbild geändert',
@@ -91,7 +97,8 @@ enum ActivityAction: string
             self::ProjectCreated, self::ProjectUpdated, self::ProjectDirectoryCreated,
             self::ProjectDirectoryFailed, self::PreviewCreated, self::PreviewUpdated,
             self::PreviewDeleted, self::PreviewProvisioned, self::PreviewProvisionFailed,
-            self::PreviewDisabled => 'projects',
+            self::PreviewDisabled, self::PreviewUploadStarted, self::PreviewUploaded,
+            self::PreviewUploadFailed => 'projects',
             self::FeedbackApproved, self::FeedbackChangesRequested => 'feedback',
             self::BrandingUpdated => 'settings',
         };
@@ -126,7 +133,7 @@ enum ActivityAction: string
     {
         return in_array($this, [
             self::LoginFailed, self::PreviewProvisionFailed, self::ProjectDirectoryFailed, self::UserBlocked,
-            self::CustomerDeactivated,
+            self::CustomerDeactivated, self::PreviewUploadFailed,
         ], true);
     }
 }

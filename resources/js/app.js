@@ -78,6 +78,10 @@ document.querySelectorAll('[data-rail-toggle]').forEach((button) => {
  * copy of the same page until the server renders it without data-poll. The
  * page itself is the source -- there is no status API. After a while it gives
  * up and reveals [data-poll-stalled], since a stopped worker never finishes.
+ *
+ * With data-poll-reload the whole page is reloaded once the work is done,
+ * for results that show elsewhere on the page too -- an unpacked draft
+ * changes the preview's version, target and thumbnail.
  */
 document.querySelectorAll('[data-poll][id]').forEach((region) => {
     const interval = 1500;
@@ -103,6 +107,10 @@ document.querySelectorAll('[data-poll][id]').forEach((region) => {
 
                     if (!fresh.hasAttribute('data-poll')) {
                         region.removeAttribute('data-poll');
+
+                        if (region.hasAttribute('data-poll-reload')) {
+                            location.reload();
+                        }
 
                         return;
                     }

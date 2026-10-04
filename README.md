@@ -56,7 +56,8 @@ From there an administrator
 - creates customers and projects, and invites the people who may see them,
 - adds previews, releases them with **Bereitstellen** and re-creates their
   screenshot,
-- creates the project's folder on the server with **Ordner anlegen**,
+- creates the project's folder on the server with **Ordner anlegen** and
+  uploads a draft into it as a ZIP,
 - blocks accounts, resends or revokes invitations,
 - sets name, colours, logos and legal links under **Erscheinungsbild**,
 - and reads under **Protokoll** who did what.
@@ -294,9 +295,11 @@ These checks are input validation, not complete SSRF defence: hostnames are not
 resolved, private or loopback addresses behind an allowed name are not detected,
 and redirects and DNS rebinding are not handled. Likewise `realpath()` does not
 protect against symlinks created after the check (TOCTOU), nor against targets
-that do not exist yet. As long as only `NullPreviewProvisioner` exists, no
-connection is opened and no file is served — before real serving lands, both
-checks must be repeated and completed at the actual I/O point.
+that do not exist yet. Both are therefore repeated where the I/O happens: the
+preview host resolves every requested file with `realpath()` again at the
+moment it serves it (`PreviewFileResolver`), and the screenshot worker resolves
+an upstream host itself, pins the public address and blocks redirects (see
+[Thumbnails](#thumbnails)).
 
 **Project directories** — **Ordner anlegen** on the project page creates
 `<customer-slug>/<project-slug>` below `PROJECT_DIRECTORY_ROOT` (default
@@ -309,6 +312,14 @@ the result with `realpath()` and only ever creates: no deleting, renaming,
 writable by the worker. The reasoning, and how to point it at a deployment
 directory outside the volume, is in
 [docs/adr/0002-project-directories.md](docs/adr/0002-project-directories.md).
+
+**Uploaded drafts** — the second, equally narrow exception: an administrator
+uploads a draft as a ZIP and the queue worker unpacks it below the project
+folder (see [Uploading a draft](#uploading-a-draft)). The archive is never
+unpacked with `extractTo()`; every entry is checked first and every file
+written by Smallgate itself, and a single unsafe entry rejects the whole
+archive. Smallgate deletes only folders it unpacked and recorded itself. The
+reasoning is in [docs/adr/0004-preview-uploads.md](docs/adr/0004-preview-uploads.md).
 
 ## Previews
 
@@ -373,6 +384,34 @@ mkcert -cert-file docker/nginx/certs/preview.crt \
        "*.preview.localhost"
 docker compose --profile preview up -d preview
 ```
+
+### Uploading a draft
+
+Instead of copying files onto the server, an administrator uploads the built
+site as a ZIP on the project page (**Entwurf hochladen**). The project folder
+has to exist first. The queue worker unpacks the archive into
+`<project folder>/vorschauen/<preview-id>/<upload-id>/` — a hidden folder
+first, renamed into place once complete — and only then points the preview at
+it. The customer never sees a half-written draft.
+
+- A **released** preview gets a new version right away, exactly as with
+  **Bereitstellen**: fresh feedback, fresh thumbnail.
+- A preview that is **not released** only gets its new content; release it
+  with **Bereitstellen** as usual. Administrators can open it beforehand.
+- A single folder wrapping everything (`dist/`, `build/`) is unwrapped; the
+  result needs an `index.html` at its top. Hidden files and `__MACOSX/` are
+  skipped.
+- Rejected outright: paths with `..`, absolute paths, backslashes, symlinks,
+  anything that is neither file nor folder, and archives beyond the limits in
+  `config/previews.php` — 64 MB zipped, 256 MB unpacked, 5,000 files, 20
+  levels. The unpacked size is counted while writing; the sizes an archive
+  declares are not trusted.
+- The newest three uploads per preview are kept, older ones deleted. Folders
+  put there by hand (rsync, SFTP) are never touched, and both ways can be
+  mixed: an upload only moves the preview's target.
+
+Uploads are the one request allowed to be large: nginx lets up to 66 MB
+through to the upload route only and keeps 16 MB everywhere else.
 
 ### Versions and feedback
 
@@ -656,8 +695,10 @@ form then offers upstream URLs only, and no static preview is provisioned,
 screenshotted or linked to.
 
 The preview folders have to be readable by the `app` container, which serves
-them, and writable by the `worker`, which creates them (**Ordner anlegen**).
-Below `storage/app/previews`, the default, both is the case already.
+them, and writable by the `worker`, which creates them (**Ordner anlegen**)
+and unpacks uploaded drafts into them. Below `storage/app/previews`, the
+default, both is the case already. A reverse proxy in front has to accept
+request bodies of 66 MB for the upload route, too; Caddy does by default.
 
 ## Project structure
 

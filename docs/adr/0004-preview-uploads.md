@@ -211,8 +211,12 @@ beiden Stages, und `client_max_body_size` in nginx).
    - Zip-Slip (`../`, absolut, Backslash, Laufwerksbuchstabe), Symlink-Eintrag,
    - Zip-Bombe (Größe und Dateizahl), fehlende `index.html`, Oberordner,
    - versteckte und `__MACOSX`-Einträge.
+
+   *(erledigt: `PreviewArchiveExtractor`, `DirectoryRemover`)*
 4. Job `ExtractPreviewUpload` mit Umschalten, Versionierung und Aufräumen.
    Feature-Tests: gleichzeitiger zweiter Upload, Fehler lässt die Vorschau
    unverändert, Löschen nur verzeichneter Ordner, aktuelles Ziel nie gelöscht.
-5. Formular und Statusanzeige im Admin-Bereich, Aktivitätsprotokoll.
-6. README, `docs/sicherer-betrieb.md`, ADR 0002 und `CLAUDE.md`.
+   *(erledigt: `ExtractPreviewUpload`, `PreviewUploadPruner`,
+   `RemovePreviewUploads` für gelöschte Vorschauen)*
+5. Formular und Statusanzeige im Admin-Bereich, Aktivitätsprotokoll. *(erledigt)*
+6. README, `docs/sicherer-betrieb.md`, ADR 0002 und `CLAUDE.md`. *(erledigt)*

@@ -152,6 +152,10 @@ Route::middleware(['auth', 'admin'])
             ->name('projects.previews.provision');
         Route::post('projekte/{project}/vorschauen/{preview}/deaktivieren', [Admin\PreviewController::class, 'disable'])
             ->name('projects.previews.disable');
+        // The one route that takes a large body (ADR 0004). nginx lets up to
+        // 66 MB through to exactly this path; keep the two in step.
+        Route::post('projekte/{project}/vorschauen/{preview}/hochladen', [Admin\PreviewUploadController::class, 'store'])
+            ->name('projects.previews.upload');
         Route::get('projekte/{project}/vorschauen/{preview}/vorschaubild', [Admin\PreviewController::class, 'thumbnail'])
             ->name('projects.previews.thumbnail');
         Route::post('projekte/{project}/vorschauen/{preview}/vorschaubild', [Admin\PreviewController::class, 'regenerateThumbnail'])

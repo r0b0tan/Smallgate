@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DirectoryStatus;
 use App\Enums\FeedbackDecision;
 use App\Enums\PreviewStatus;
 use App\Enums\PreviewTargetType;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -77,6 +79,38 @@ class Preview extends Model
     public function uploads(): HasMany
     {
         return $this->hasMany(PreviewUpload::class);
+    }
+
+    /**
+     * The most recent upload, for the status on the project page.
+     *
+     * @return HasOne<PreviewUpload, $this>
+     */
+    public function latestUpload(): HasOne
+    {
+        return $this->hasOne(PreviewUpload::class)->latestOfMany('created_at');
+    }
+
+    /**
+     * Where this preview's uploaded drafts are unpacked (ADR 0004), or null
+     * while the project has no folder yet.
+     */
+    public function uploadsDirectory(): ?string
+    {
+        return $this->project === null ? null : self::uploadsDirectoryFor($this->project, $this->id);
+    }
+
+    /**
+     * The same path for a preview that may no longer exist: built from the
+     * project's folder and the preview's id, nothing else.
+     */
+    public static function uploadsDirectoryFor(Project $project, string $previewId): ?string
+    {
+        if ($project->directory_status !== DirectoryStatus::Created || ($directory = $project->directoryPath()) === null) {
+            return null;
+        }
+
+        return $directory.'/vorschauen/'.$previewId;
     }
 
     /**

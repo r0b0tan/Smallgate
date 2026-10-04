@@ -56,7 +56,7 @@
                                 <p class="truncate text-xs sg-faint">{{ $invitation->customer?->name }}</p>
                             </div>
                             <span class="whitespace-nowrap text-xs sg-faint">
-                                bis {{ $invitation->expires_at->format('d.m.Y H:i') }}
+                                bis {{ $invitation->expires_at->timezone(config('smallgate.display_timezone'))->format('d.m.Y H:i') }}
                             </span>
                         </li>
                     @endforeach

@@ -91,6 +91,10 @@
                             </div>
                         </dl>
 
+                        @can('upload', $preview)
+                            @include('admin.previews._upload')
+                        @endcan
+
                         <div class="mt-4 grid gap-4 border-t border-line pt-4 sm:grid-cols-[14rem_minmax(0,1fr)]">
                             <div>
                                 <div class="relative aspect-[16/10] overflow-hidden rounded-md bg-paper ring-1 ring-line">
@@ -191,7 +195,7 @@
 
                         <p class="mt-3 text-xs sg-faint">
                             @if ($preview->provisioned_at)
-                                Zuletzt bereitgestellt {{ $preview->provisioned_at->format('d.m.Y H:i') }}.
+                                Zuletzt bereitgestellt {{ $preview->provisioned_at->timezone(config('smallgate.display_timezone'))->format('d.m.Y H:i') }}.
                             @else
                                 Noch nie bereitgestellt.
                             @endif

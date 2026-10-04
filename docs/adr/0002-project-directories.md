@@ -59,7 +59,9 @@ eigene ADR.
 
 - Smallgate verändert jetzt Dateien außerhalb des Projektverzeichnisses, aber
   nur durch Anlegen und nur unterhalb eines vom Betreiber bestimmten Wurzel-
-  verzeichnisses.
+  verzeichnisses. ADR 0004 erweitert das eng begrenzt: Hochgeladene Entwürfe
+  werden unter `vorschauen/` im Projektordner entpackt, und nur diese
+  verzeichneten Ordner darf Smallgate wieder löschen.
 - Der `NullPreviewProvisioner` bleibt unverändert. Er verändert weiterhin
   keine Serverdateien.
 - Die Fortschrittsanzeige fragt die Projektseite selbst erneut ab. Eine

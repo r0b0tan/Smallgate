@@ -184,6 +184,14 @@ sein.
   den Browser zur selben Website wie das Portal.
 - Ohne Preview-Domain `PREVIEW_TARGET_TYPES=upstream_url` setzen. Dann bietet
   Smallgate nur Upstream-URLs an.
+- **Entwürfe hochladen** (ADR 0004): Der Queue-Worker entpackt ZIPs unterhalb
+  des Projektordners und braucht dort Schreibrechte, wie für „Ordner
+  anlegen“. Der `app`-Container braucht nur Leserechte. Nur die Upload-Route
+  nimmt Requests bis 66 MB an. Ein Reverse Proxy davor muss das ebenfalls
+  zulassen; nginx braucht dort ein eigenes `client_max_body_size`.
+- Smallgate löscht nur Upload-Ordner, die es selbst entpackt und in der
+  Datenbank verzeichnet hat, nie das aktuelle Ziel einer Vorschau und nie
+  Ordner, die per rsync oder SFTP entstanden sind.
 - In `PREVIEW_ALLOWED_UPSTREAM_HOSTS` nur Hosts eintragen, die man selbst
   kontrolliert.
 - Bei **Upstream-URLs** schützt Smallgate nur den **Weg** zur Vorschau, nicht

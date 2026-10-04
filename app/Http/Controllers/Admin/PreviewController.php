@@ -12,12 +12,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StorePreviewRequest;
 use App\Http\Requests\Admin\UpdatePreviewRequest;
 use App\Jobs\GeneratePreviewThumbnail;
+use App\Jobs\RemovePreviewUploads;
 use App\Models\Activity;
 use App\Models\Preview;
 use App\Models\Project;
 use App\Services\Previews\PreviewTargetGuard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -111,7 +113,29 @@ class PreviewController extends Controller
         $this->authorize('delete', $preview);
         $this->ensureBelongsToProject($project, $preview);
 
-        $preview->delete();
+        // The upload rows name the folders to remove (ADR 0004). Locked, so a
+        // worker cannot claim one of them between the check and the delete.
+        $uploadIds = DB::transaction(function () use ($preview) {
+            $uploads = $preview->uploads()->lockForUpdate()->get();
+
+            if ($uploads->contains(fn ($upload) => $upload->status->isRunning())) {
+                return null;
+            }
+
+            $preview->uploads()->delete();
+            $preview->delete();
+
+            return $uploads->pluck('id')->all();
+        });
+
+        if ($uploadIds === null) {
+            return redirect()->route('admin.projects.show', $project)
+                ->with('error', 'Gerade wird ein Entwurf entpackt. Die Vorschau kann danach gelöscht werden.');
+        }
+
+        if ($uploadIds !== []) {
+            RemovePreviewUploads::dispatch($project->id, $preview->id, $uploadIds);
+        }
 
         // Recorded after the delete: the entry keeps the preview's name.
         Activity::record(ActivityAction::PreviewDeleted, $preview);
