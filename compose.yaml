@@ -47,7 +47,7 @@ services:
         condition: service_healthy
 
   web:
-    image: nginx:1.27-alpine
+    image: nginx:1.30-alpine
     restart: unless-stopped
     ports:
       - "${DEV_BIND:-127.0.0.1}:${APP_PORT:-8080}:80"
@@ -100,7 +100,7 @@ services:
   # docker/nginx/preview.conf.template. Opt-in via the profile:
   #   docker compose --profile preview up -d preview
   preview:
-    image: nginx:1.27-alpine
+    image: nginx:1.30-alpine
     restart: unless-stopped
     ports:
       - "${DEV_BIND:-127.0.0.1}:${PREVIEW_PORT:-443}:443"
