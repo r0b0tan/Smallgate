@@ -136,7 +136,7 @@ CMD ["php-fpm"]
 # ---------------------------------------------------------------------------
 # nginx needs only public/: static files directly, everything else goes to
 # php-fpm in the app container.
-FROM nginx:1.27-alpine AS web
+FROM nginx:1.30-alpine AS web
 
 COPY --from=prod /var/www/html/public /var/www/html/public
 COPY docker/nginx/prod.conf.template /etc/nginx/templates/default.conf.template
