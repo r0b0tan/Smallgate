@@ -19,8 +19,8 @@ terminiert und an `compose.prod.yaml` weiterreicht.
 - Wer in der Gruppe `docker` ist, ist faktisch root. Die Gruppe klein halten.
 - DNS: ein A- bzw. AAAA-Eintrag für den Portal-Host, z. B.
   `portal.example.com`. Für statische Vorschauen zusätzlich ein
-  Wildcard-Eintrag auf einer **eigenen** Domain, z. B. `*.example-preview.com`
-  (Abschnitt 6).
+  Wildcard-Eintrag auf einer **eigenen** Domain, z. B. `*.example-preview.com`,
+  siehe [vorschau-domain-einrichten.md](vorschau-domain-einrichten.md).
 
 ## 2. Reverse Proxy und TLS
 
@@ -39,23 +39,7 @@ portal.example.com {
 }
 ```
 
-Statische Vorschauen brauchen ein Wildcard-Zertifikat für die
-Preview-Domain. Das gibt es nur über die DNS-01-Challenge, der Proxy braucht
-also API-Zugriff auf den DNS-Anbieter. Mit Caddy über das passende
-DNS-Modul:
-
-```
-*.example-preview.com {
-    tls {
-        dns <anbieter> <zugangsdaten>
-    }
-    reverse_proxy 127.0.0.1:8080 {
-        header_up X-Forwarded-Port 443
-    }
-}
-```
-
-Mit nginx die Header ausdrücklich überschreiben:
+Mit nginx die Header ausdrücklich überschreiben, nicht anhängen:
 
 ```nginx
 location / {
@@ -71,6 +55,24 @@ location / {
 Smallgate sendet HSTS mit einem Jahr Laufzeit. Bevor echte Nutzer kommen,
 sicherstellen, dass HTTPS dauerhaft funktioniert. Ein Zurück auf HTTP ist
 danach ein Jahr lang nicht möglich.
+
+### Vorschau-Domain
+
+Für statische Vorschauen braucht es eine eigene Domain mit Wildcard-DNS,
+Wildcard-Zertifikat und einem zweiten Proxy-Block. Die vollständige
+Einrichtung für nginx mit certbot und für Caddy steht in
+[vorschau-domain-einrichten.md](vorschau-domain-einrichten.md). Aus Sicht der
+Sicherheit zählt dabei:
+
+- Bei Cloudflare **„DNS only“**, nie den Proxy. Universal SSL ausschalten,
+  sonst stehen fremde Zertifizierungsstellen in den CAA-Einträgen.
+- Das DNS-API-Token darf nur die DNS-Einträge dieser einen Zone bearbeiten,
+  liegt nur für root lesbar und wird in einer eigenen SSH-Sitzung eingetragen.
+- Das Access-Log des Proxys kürzt auch `/__smallgate/zugang?token=…`, und zwar
+  im `server`-Block der Vorschau-Hosts.
+- **Keine eigenen Sicherheits-Header am Proxy.** Smallgate setzt HSTS, CSP,
+  `nosniff` und die übrigen Header selbst. Eine CSP des Proxys würde jeden
+  Entwurf kaputtmachen, ein zweites HSTS ist überflüssig.
 
 ## 3. Konfiguration (`.env`)
 
@@ -245,7 +247,8 @@ PHP-Abhängigkeiten auf bekannte Lücken prüfen:
   davor muss das selbst tun: Er sieht `/einladung/<token>`,
   `/passwort-zuruecksetzen/<token>?email=…` und
   `/__smallgate/zugang?token=…` im Klartext. Caddy schreibt ohne `log`-Direktive kein Access-Log. Bei nginx
-  diese Pfade aus dem Log nehmen oder maskieren.
+  die Log-Map aus [vorschau-domain-einrichten.md](vorschau-domain-einrichten.md)
+  verwenden, und zwar auch im `server`-Block der Vorschau-Hosts.
 - **Queue:** Der `worker` verschickt auch die Mails zum Zurücksetzen des
   Passworts. Läuft er nicht, kommen keine Reset-Mails an.
 - **Protokoll:** Unter „Protokoll“ im Admin-Bereich stehen Anmeldungen (auch
@@ -260,6 +263,7 @@ PHP-Abhängigkeiten auf bekannte Lücken prüfen:
 
 - [ ] SSH nur mit Schlüssel, Firewall offen nur für 22/80/443
 - [ ] `WEB_BIND=127.0.0.1`, Reverse Proxy mit TLS, setzt `X-Forwarded-*` selbst
+      und keine eigenen Sicherheits-Header (HSTS, CSP)
 - [ ] `.env` mit `chmod 600`, eigener `APP_KEY`, langes `DB_PASSWORD`
 - [ ] `APP_URL` mit https, `PORTAL_HOST` gesetzt
 - [ ] `TRUSTED_PROXIES` = `DOCKER_SUBNET`, nicht `*`

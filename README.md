@@ -577,26 +577,11 @@ portal.example.com {
 }
 ```
 
-Static previews additionally need their own domain (see [Previews](#previews)):
-one wildcard DNS record `*.example-preview.com` pointing at the server and a
-wildcard certificate for it. Wildcard certificates are only issued through the
-DNS-01 challenge, so the proxy needs API access to your DNS provider — with
-Caddy a build that includes the matching
-[DNS module](https://caddyserver.com/docs/modules/):
-
-```
-*.example-preview.com {
-    tls {
-        dns <provider> <credentials>
-    }
-    reverse_proxy 127.0.0.1:8080 {
-        header_up X-Forwarded-Port 443
-    }
-}
-```
-
-The same nginx container answers both; it tells portal and preview hosts
-apart by name.
+Static previews additionally need a domain of their own with a wildcard DNS
+record and a wildcard certificate. That setup has a few traps — DNS proxying,
+CAA records, DNSSEC, log masking, headers at the proxy — and is described step
+by step, for nginx with certbot and for Caddy, in
+[docs/vorschau-domain-einrichten.md](docs/vorschau-domain-einrichten.md).
 
 The security side of running Smallgate — server, proxy, `.env`, accounts,
 backups, updates and a go-live checklist — is covered in German in
@@ -688,17 +673,12 @@ Test a restore once before you rely on it.
 
 ### Previews in production
 
-Static previews are served below `PREVIEW_BASE_DOMAIN` as soon as DNS and the
-wildcard certificate are in place (see [First deployment](#first-deployment)).
+Static previews and uploaded drafts need the preview domain: DNS, wildcard
+certificate, reverse proxy and `PREVIEW_BASE_DOMAIN`, set up once as described
+in [docs/vorschau-domain-einrichten.md](docs/vorschau-domain-einrichten.md).
 Without a preview domain, set `PREVIEW_TARGET_TYPES=upstream_url`: the admin
 form then offers upstream URLs only, and no static preview is provisioned,
 screenshotted or linked to.
-
-The preview folders have to be readable by the `app` container, which serves
-them, and writable by the `worker`, which creates them (**Ordner anlegen**)
-and unpacks uploaded drafts into them. Below `storage/app/previews`, the
-default, both is the case already. A reverse proxy in front has to accept
-request bodies of 66 MB for the upload route, too; Caddy does by default.
 
 ## Project structure
 
